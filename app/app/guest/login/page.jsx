@@ -147,7 +147,7 @@ export default function LoginPage() {
           variant="secondary"
           label="Google"
           size="lg"
-          className="w-full bg-red-600"
+          className="w-full bg-[#DB4437] hover:bg-[#C23321]"
           loading={socialLoading === "google"}
           onClick={() => handleSocialLogin("google")}
         />
@@ -155,7 +155,7 @@ export default function LoginPage() {
           variant="secondary"
           label="Apple"
           size="lg"
-          className="w-full bg-black"
+          className="w-full !bg-black hover:!bg-black"
           loading={socialLoading === "apple"}
           onClick={() => handleSocialLogin("apple")}
         />

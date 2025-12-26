@@ -1,8 +1,8 @@
 import "./app.css";
 
 export const metadata = {
-  title: "Groopin Web",
-  description: "Groopin web companion."
+  title: "Groopin",
+  description: "Groopin"
 };
 
 export default function AppLayout({ children }) {
