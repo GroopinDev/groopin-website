@@ -3,7 +3,7 @@
 import React from "react";
 
 const baseStyles =
-  "inline-flex items-center justify-center rounded-full px-5 font-semibold transition disabled:cursor-not-allowed";
+  "inline-flex items-center justify-center rounded-full px-5 font-semibold transition disabled:cursor-not-allowed disabled:opacity-60";
 
 const sizeStyles = {
   default: "h-10 text-base",
