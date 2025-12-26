@@ -635,8 +635,10 @@ export default function OfferDetailsPage() {
     setTicketFeedback(t("ticket_copied"));
   };
 
+  const normalizeTicketToken = (value) => value.replace(/\s+/g, "");
+
   const handleScanTicket = async (tokenOverride) => {
-    const value = (tokenOverride || scanToken).trim();
+    const value = normalizeTicketToken(tokenOverride || scanToken).trim();
     if (!value || scanBusy) return;
     if (tokenOverride) {
       setScanToken(value);
@@ -1031,7 +1033,15 @@ export default function OfferDetailsPage() {
                 <div className="mt-3 flex flex-col gap-2">
                   <input
                     value={scanToken}
-                    onChange={(event) => setScanToken(event.target.value)}
+                    onChange={(event) =>
+                      setScanToken(normalizeTicketToken(event.target.value))
+                    }
+                    onPaste={(event) => {
+                      event.preventDefault();
+                      const pasted = event.clipboardData.getData("text");
+                      const normalized = normalizeTicketToken(pasted);
+                      setScanToken(normalized);
+                    }}
                     placeholder={t("ticket_scan_placeholder")}
                     className="w-full rounded-2xl border border-[#EADAF1] px-3 py-2 text-xs text-secondary-600 outline-none focus:border-primary-500"
                   />
