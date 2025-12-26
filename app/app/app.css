@@ -1,0 +1,9 @@
+.groopin-app {
+  min-height: 100vh;
+  background-color: #ffffff;
+  color: #000000;
+}
+
+.app-shell {
+  min-height: 100vh;
+}

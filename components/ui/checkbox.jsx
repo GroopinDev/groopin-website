@@ -1,0 +1,17 @@
+"use client";
+
+import React from "react";
+
+export default function Checkbox({ label, checked, onChange, className = "" }) {
+  return (
+    <label className={`flex items-center gap-3 ${className}`}>
+      <input
+        type="checkbox"
+        className="h-5 w-5 rounded border-neutral-300 text-primary-500 focus:ring-primary-400"
+        checked={checked}
+        onChange={(event) => onChange?.(event.target.checked)}
+      />
+      <span className="text-sm text-neutral-700">{label}</span>
+    </label>
+  );
+}

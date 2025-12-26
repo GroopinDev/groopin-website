@@ -1,0 +1,453 @@
+"use client";
+
+import React, { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+
+import AnimatedLogo from "./ui/animated-logo";
+import UserAvatar from "./user/user-avatar";
+import { useI18n } from "./i18n-provider";
+import { apiRequest } from "../app/lib/api-client";
+import { clearSession, getToken, getUser, setSession } from "../app/lib/session";
+
+export default function AppShell({ children }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { t } = useI18n();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadGroopsCount, setUnreadGroopsCount] = useState(0);
+
+  const menuItems = [
+    { label: t("Favorites"), href: "/app/auth/favorites" },
+    { label: t("Participating"), href: "/app/auth/participating" },
+    { label: t("Settings"), href: "/app/auth/drawer/settings" },
+    { label: t("FAQ"), href: "/app/auth/drawer/faq" },
+    { label: t("Terms"), href: "/app/auth/terms-and-conditions" },
+    { label: t("policy of use"), href: "/app/auth/policy-of-use" },
+    { label: t("Us"), href: "/app/auth/drawer/us" }
+  ];
+
+  const refreshNotificationsCount = useCallback(async () => {
+    try {
+      const payload = await apiRequest("notifications");
+      const data = Array.isArray(payload?.data) ? payload.data : [];
+      const computed = data.filter((item) => !item?.read_at).length;
+      const metaCount =
+        typeof payload?.meta?.unread_count === "number"
+          ? payload.meta.unread_count
+          : null;
+      const count = metaCount !== null ? metaCount : computed;
+      setUnreadCount(count);
+    } catch {
+      setUnreadCount(0);
+    }
+  }, []);
+
+  const refreshGroopsCount = useCallback(
+    async (activeConversationId = null) => {
+      try {
+        const payload = await apiRequest("conversations");
+        const data = payload?.data || [];
+        const metaCount = payload?.meta?.has_unread_messages_count;
+        const computed = data.reduce((sum, conversation) => {
+          if (
+            activeConversationId &&
+            Number(conversation?.id) === Number(activeConversationId)
+          ) {
+            return sum;
+          }
+          if (typeof conversation?.unread_messages === "number") {
+            return sum + conversation.unread_messages;
+          }
+          if (typeof conversation?.has_unread_messages_count === "number") {
+            return sum + conversation.has_unread_messages_count;
+          }
+          if (conversation?.has_unread_messages) {
+            return sum + 1;
+          }
+          return sum;
+        }, 0);
+
+        if (activeConversationId) {
+          setUnreadGroopsCount(computed);
+          return;
+        }
+
+        if (typeof metaCount === "number") {
+          setUnreadGroopsCount(metaCount);
+          return;
+        }
+
+        setUnreadGroopsCount(computed);
+      } catch {
+        setUnreadGroopsCount(0);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      router.replace("/app/guest/login");
+      return;
+    }
+
+    const cachedUser = getUser();
+    if (cachedUser) {
+      setUser(cachedUser);
+    }
+
+    apiRequest("user")
+      .then((payload) => {
+        setUser(payload?.data || null);
+        if (token) {
+          setSession(token, payload?.data);
+        }
+      })
+      .catch((error) => {
+        if (error?.status === 401) {
+          clearSession();
+          router.replace("/app/guest/login");
+        }
+      });
+
+    refreshNotificationsCount();
+    refreshGroopsCount();
+    const groopsInterval = setInterval(refreshGroopsCount, 8000);
+    const notificationsInterval = setInterval(refreshNotificationsCount, 12000);
+    return () => {
+      clearInterval(groopsInterval);
+      clearInterval(notificationsInterval);
+    };
+  }, [refreshGroopsCount, refreshNotificationsCount, router]);
+
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    const match = pathname.match(/\/app\/auth\/conversations\/(\d+)/);
+    const activeConversationId = match ? Number(match[1]) : null;
+    if (activeConversationId) {
+      refreshGroopsCount(activeConversationId);
+    }
+  }, [pathname, refreshGroopsCount]);
+
+  useEffect(() => {
+    const handleNotificationsUpdate = (event) => {
+      const detailCount = event?.detail?.unreadCount;
+      if (typeof detailCount === "number") {
+        setUnreadCount(detailCount);
+        return;
+      }
+      refreshNotificationsCount();
+    };
+
+    window.addEventListener("notifications:updated", handleNotificationsUpdate);
+    return () =>
+      window.removeEventListener(
+        "notifications:updated",
+        handleNotificationsUpdate
+      );
+  }, [refreshNotificationsCount]);
+
+  const handleLogout = async () => {
+    try {
+      await apiRequest("logout", { method: "POST" });
+    } catch {
+      // ignore
+    } finally {
+      clearSession();
+      router.replace("/app/guest/login");
+    }
+  };
+
+  const isExact = (path) => pathname === path;
+  const isPath = (path) => pathname === path || pathname.startsWith(`${path}/`);
+
+  const tabs = [
+    {
+      label: t("Home"),
+      href: "/app/auth/drawer/tabs",
+      active: isExact("/app/auth/drawer/tabs") || isPath("/app/auth/offers"),
+      icon: HomeIcon
+    },
+    {
+      label: t("Offers"),
+      href: "/app/auth/drawer/tabs/my-offers",
+      active:
+        isPath("/app/auth/drawer/tabs/my-offers") ||
+        isPath("/app/auth/my-offers"),
+      icon: MyOffersIcon
+    },
+    {
+      label: t("Requests"),
+      href: "/app/auth/drawer/tabs/requests",
+      active: isPath("/app/auth/drawer/tabs/requests"),
+      icon: RequestsIcon
+    },
+    {
+      label: t("Groops"),
+      href: "/app/auth/drawer/tabs/groops",
+      active:
+        isPath("/app/auth/drawer/tabs/groops") ||
+        isPath("/app/auth/conversations"),
+      icon: GroopsIcon,
+      badge: unreadGroopsCount
+    },
+    {
+      label: t("Profile"),
+      href: "/app/auth/drawer/tabs/profile",
+      active:
+        isPath("/app/auth/drawer/tabs/profile") ||
+        isPath("/app/auth/profile"),
+      icon: ProfileIcon
+    }
+  ];
+
+  return (
+    <div className="relative min-h-screen bg-white">
+      <header className="border-b border-[#EADAF1]">
+        <div className="mx-auto flex h-16 w-full max-w-5xl items-center px-4 md:px-6">
+          <button
+            type="button"
+            className="text-2xl text-primary-900"
+            onClick={() => setDrawerOpen(true)}
+          >
+            =
+          </button>
+          <div className="flex flex-1 justify-center">
+            <AnimatedLogo width={90} height={40} />
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push("/app/auth/drawer/notifications")}
+            className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[#EADAF1] text-secondary-600 transition hover:bg-[#F7F1FA]"
+          >
+            <BellIcon />
+            {unreadCount > 0 ? (
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-secondary-600 px-1 text-[10px] text-white">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            ) : null}
+          </button>
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-5xl px-4 pb-24 pt-4 md:px-6">
+        {children}
+      </main>
+
+      {drawerOpen ? (
+        <div
+          className="fixed inset-0 z-40 bg-black/30"
+          onClick={() => setDrawerOpen(false)}
+        />
+      ) : null}
+
+      <aside
+        className={`fixed left-0 top-0 z-50 h-full w-80 bg-white px-6 pb-6 pt-10 shadow-xl transition ${
+          drawerOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {user ? (
+          <div className="space-y-6 border-b border-[#D0D0D4] pb-6">
+            <div className="flex flex-col items-center gap-3">
+              <UserAvatar user={user} size={90} withBorder />
+              <p className="text-2xl font-semibold text-primary-900">
+                {user.name || `${user.first_name} ${user.last_name}`}
+              </p>
+              <div className="rounded-full border border-[#EADAF1] px-3 py-2 text-sm text-secondary-400">
+                {t("number_of_created_offers", {
+                  count: user.owning_offers_count || 0
+                })}
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        <nav className="mt-6 space-y-3 text-sm font-medium text-secondary-400">
+          {menuItems.map((item) => (
+            <Link key={item.href} href={item.href} className="block">
+              {item.label}
+            </Link>
+          ))}
+          <button
+            type="button"
+            className="mt-4 text-left text-sm font-medium text-secondary-400"
+            onClick={() => (window.location.href = "mailto:contact@groopin.io")}
+          >
+            {t("Contact us")}
+          </button>
+        </nav>
+
+        <div className="mt-10 text-center text-sm text-secondary-400">
+          Groopin - V 1.1.1
+        </div>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="mt-4 w-full rounded-full border border-neutral-300 py-2 text-sm font-semibold text-primary-900"
+        >
+          {t("Logout")}
+        </button>
+      </aside>
+
+      <nav className="fixed bottom-0 left-0 right-0 border-t border-[#EADAF1] bg-white px-4 py-3">
+        <div className="mx-auto flex max-w-5xl justify-between text-xs font-semibold">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const badge = tab.badge || 0;
+            return (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                className={`flex flex-col items-center gap-1 ${
+                  tab.active ? "text-secondary-600" : "text-secondary-400"
+                }`}
+                aria-current={tab.active ? "page" : undefined}
+              >
+                <span className="relative flex items-center justify-center">
+                  <Icon active={tab.active} user={user} />
+                  {badge > 0 ? (
+                    <span className="absolute -right-2 -top-2 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-secondary-500 px-1 text-[10px] text-white">
+                      {badge > 9 ? "9+" : badge}
+                    </span>
+                  ) : null}
+                </span>
+                {tab.label}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+    </div>
+  );
+}
+
+function HomeIcon({ active }) {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={active ? "text-secondary-600" : "text-secondary-400"}
+    >
+      <path d="M4 10.5L12 4l8 6.5" />
+      <path d="M6 10v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-8" />
+    </svg>
+  );
+}
+
+function MyOffersIcon({ active }) {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={active ? "text-secondary-600" : "text-secondary-400"}
+    >
+      <path d="M3.5 12h17" />
+      <path d="M8 5h8l1 3H7l1-3Z" />
+      <path d="M6 12v6a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-6" />
+    </svg>
+  );
+}
+
+function RequestsIcon({ active }) {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={active ? "text-secondary-600" : "text-secondary-400"}
+    >
+      <path d="M5 12h14" />
+      <path d="M12 5l-3 3m3-3 3 3" />
+      <path d="M6 12v6a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-6" />
+    </svg>
+  );
+}
+
+function GroopsIcon({ active }) {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={active ? "text-secondary-600" : "text-secondary-400"}
+    >
+      <path d="M21 11a4 4 0 0 1-4 4H9l-4 3V7a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4Z" />
+      <path d="M9 9h6M9 12h4" />
+    </svg>
+  );
+}
+
+function ProfileIcon({ active, user }) {
+  if (user) {
+    return (
+      <span
+        className={`rounded-full ${active ? "ring-2 ring-secondary-600 ring-offset-2 ring-offset-white" : ""}`}
+      >
+        <UserAvatar user={user} size={26} withBorder={active} />
+      </span>
+    );
+  }
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={active ? "text-secondary-600" : "text-secondary-400"}
+    >
+      <circle cx="12" cy="8" r="3.5" />
+      <path d="M4 19c1.8-3.5 5-5 8-5s6.2 1.5 8 5" />
+    </svg>
+  );
+}
+
+function BellIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M15 17H9" />
+      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7" />
+    </svg>
+  );
+}

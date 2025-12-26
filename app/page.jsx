@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 export default function Home() {
@@ -73,6 +74,14 @@ export default function Home() {
               <img src="/assets/images/logo.png" className="h-10 sm:h-12 w-auto" alt="Groopin logo" />
             </div>
           </div>
+          <div className="flex flex-1 justify-end">
+            <Link
+              href="/app/guest/login"
+              className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-primary-500 via-[#822485] to-secondary-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+            >
+              Open web app
+            </Link>
+          </div>
         </nav>
       </header>
 
@@ -101,14 +110,14 @@ export default function Home() {
               </div>
             </div>
 
-            <h1 className="mt-8 text-pretty text-3xl sm:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tight text-groopinPurple">
+            <h1 className="mt-8 text-pretty text-3xl sm:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tight text-primary-800">
               Where paths cross, adventures begin
             </h1>
 
             <div className="mt-6 sm:mt-8 text-pretty text-base sm:text-lg font-medium text-gray-500 space-y-4">
               <p>
-                Looking to share the things you love with others? <span className="text-groopinPink font-bold">Groopin</span> makes it easy.
-                With <span className="text-groopinPink font-bold">Groopin</span>, connect with like-minded people and share your passions across
+                Looking to share the things you love with others? <span className="text-secondary-600 font-bold">Groopin</span> makes it easy.
+                With <span className="text-secondary-600 font-bold">Groopin</span>, connect with like-minded people and share your passions across
                 categories like sports, culture, travel, and dining.
               </p>
               <ul className="text-gray-500 list-disc list-inside space-y-1">
@@ -119,7 +128,18 @@ export default function Home() {
               <p>Join the waiting list to be the first to experience Groopin!</p>
             </div>
 
-            <div className="mt-8 sm:mt-10">
+            <div className="mt-8 sm:mt-10 space-y-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <Link
+                  href="/app/guest/login"
+                  className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-primary-500 via-[#822485] to-secondary-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:opacity-90"
+                >
+                  Go to the web app
+                </Link>
+                <span className="text-sm text-gray-500">
+                  Already a member? Skip the waitlist.
+                </span>
+              </div>
               <form onSubmit={onSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6 w-full">
                 <div>
                   <label htmlFor="name" className="block text-base/6 font-medium text-gray-900">
@@ -130,7 +150,7 @@ export default function Home() {
                       type="text"
                       name="name"
                       id="name"
-                      className="block w-full rounded-md bg-white px-4 py-3 text-base text-gray-900 outline outline-1 -outline-offset-1 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-groopinPurple sm:text-base/6 outline-gray-300"
+                      className="block w-full rounded-md bg-white px-4 py-3 text-base text-gray-900 outline outline-1 -outline-offset-1 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-primary-500 sm:text-base/6 outline-gray-300"
                       placeholder="Khalid BOUZIANE"
                       required
                       disabled={submitting}
@@ -146,7 +166,7 @@ export default function Home() {
                       type="email"
                       name="email"
                       id="email"
-                      className="block w-full rounded-md bg-white px-4 py-3 text-base text-gray-900 outline outline-1 -outline-offset-1 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-groopinPurple sm:text-base/6 outline-gray-300"
+                      className="block w-full rounded-md bg-white px-4 py-3 text-base text-gray-900 outline outline-1 -outline-offset-1 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-primary-500 sm:text-base/6 outline-gray-300"
                       placeholder="khalid@gmail.com"
                       required
                       disabled={submitting}
@@ -156,7 +176,7 @@ export default function Home() {
 
                 <button
                   type="submit"
-                  className="col-span-full inline-flex items-center justify-center px-6 py-3 text-lg font-semibold text-white bg-gradient-to-r from-groopinPurple to-groopinPink rounded-lg shadow-lg hover:from-groopinPink hover:to-groopinPurple transition w-full sm:w-auto disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="col-span-full inline-flex items-center justify-center px-6 py-3 text-lg font-semibold text-white bg-gradient-to-r from-primary-500 via-[#822485] to-secondary-500 rounded-lg shadow-lg transition hover:opacity-90 w-full sm:w-auto disabled:opacity-70 disabled:cursor-not-allowed"
                   disabled={submitting}
                 >
                   {submitting ? "Submitting..." : "Join the waiting list"}

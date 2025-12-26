@@ -1,0 +1,279 @@
+"use client";
+
+import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+import OfferMainDetails from "./offer-main-details";
+import UserAvatar from "../user/user-avatar";
+import UsersAvatarsList from "../user/users-avatars-list";
+import Modal from "../ui/modal";
+import Button from "../ui/button";
+import { useI18n } from "../i18n-provider";
+import { apiRequest } from "../../app/lib/api-client";
+
+const HeartIcon = ({ filled }) => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill={filled ? "currentColor" : "none"}
+    stroke="currentColor"
+    strokeWidth="1.6"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z" />
+  </svg>
+);
+
+export default function OfferCard({ offer, currentUserId }) {
+  const pathname = usePathname();
+  const { t } = useI18n();
+  const [actionState, setActionState] = useState("idle");
+  const [actionError, setActionError] = useState("");
+  const [isRequestModalOpen, setRequestModalOpen] = useState(false);
+  const [requestMessage, setRequestMessage] = useState("");
+  const [isFavorite, setIsFavorite] = useState(
+    Boolean(offer?.auth_user_is_favorite)
+  );
+  const [favoriteCount, setFavoriteCount] = useState(
+    offer?.favorited_by_count ?? offer?.favorited_by?.length ?? 0
+  );
+  const [isPending, setIsPending] = useState(
+    Boolean(offer?.auth_user_is_pending_participant)
+  );
+  const [isParticipant, setIsParticipant] = useState(
+    Boolean(offer?.auth_user_is_participant)
+  );
+
+  useEffect(() => {
+    setIsFavorite(Boolean(offer?.auth_user_is_favorite));
+    setFavoriteCount(offer?.favorited_by_count ?? offer?.favorited_by?.length ?? 0);
+    setIsPending(Boolean(offer?.auth_user_is_pending_participant));
+    setIsParticipant(Boolean(offer?.auth_user_is_participant));
+  }, [offer]);
+
+  const ownerFullName = useMemo(() => {
+    if (!offer?.owner) return "-";
+    return `${offer.owner.first_name} ${offer.owner.last_name}`;
+  }, [offer?.owner]);
+
+  const participantsText = useMemo(() => {
+    const count = offer?.participants_count ?? 0;
+    const max = offer?.max_participants;
+    if (!max) return String(count);
+    const displayMax = count > max ? count : max;
+    return `${count}/${displayMax}`;
+  }, [offer?.participants_count, offer?.max_participants]);
+
+  const backgroundUrl =
+    offer?.category?.background_image_url ||
+    offer?.category?.parent?.background_image_url ||
+    "";
+
+  const categoryLabel = offer?.category?.name || t("Groops");
+  const isOwner = offer?.owner?.id === currentUserId;
+  const isClosed = Boolean(offer?.is_closed) || offer?.status === "closed";
+  const isOffersContext =
+    pathname === "/app/auth/drawer/tabs" ||
+    pathname?.startsWith("/app/auth/offers");
+  const statusLabel = (() => {
+    if (offer?.is_draft || offer?.status === "draft") return t("Draft");
+    if (isClosed) return t("closed");
+    if (isPending) return t("pending request");
+    if (isParticipant) return t("request_accepted");
+    if (offer?.localized_status) return offer.localized_status;
+    return t("Actives");
+  })();
+  const statusTone = (() => {
+    if (offer?.is_draft || offer?.status === "draft") {
+      return "bg-[#F1E5F6] text-secondary-600";
+    }
+    if (isClosed) return "bg-secondary-400 text-white";
+    if (isPending) return "bg-[#D59500] text-white";
+    if (isParticipant) return "bg-primary-600 text-white";
+    return "bg-secondary-600 text-white";
+  })();
+  const isRequestDisabled =
+    isOwner || isParticipant || isPending || isClosed || actionState !== "idle";
+  const showActionButton = !isOwner && !isParticipant && !isPending && !isClosed;
+
+  const href =
+    offer?.owner?.id === currentUserId
+      ? `/app/auth/my-offers/${offer.id}`
+      : `/app/auth/offers/${offer.id}`;
+
+  const handleToggleFavorite = async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (actionState !== "idle" || isOwner) return;
+    setActionError("");
+    setActionState("favorite");
+    try {
+      await apiRequest(`offers/${offer.id}/favorite`, {
+        method: isFavorite ? "DELETE" : "POST"
+      });
+      setIsFavorite((prev) => !prev);
+      setFavoriteCount((prev) => (isFavorite ? Math.max(prev - 1, 0) : prev + 1));
+    } catch (error) {
+      setActionError(error?.message || "Unable to update favorite.");
+    } finally {
+      setActionState("idle");
+    }
+  };
+
+  const handleOpenRequest = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (isRequestDisabled) return;
+    setActionError("");
+    setRequestMessage("");
+    setRequestModalOpen(true);
+  };
+
+  const handleSubmitRequest = async () => {
+    if (isRequestDisabled) return;
+    setActionState("request");
+    try {
+      await apiRequest(`requests/${offer.id}`, {
+        method: "POST",
+        body: { message: requestMessage.trim() || null }
+      });
+      setIsPending(true);
+      setRequestModalOpen(false);
+    } catch (error) {
+      setActionError(error?.message || "Unable to send request.");
+    } finally {
+      setActionState("idle");
+    }
+  };
+
+  return (
+    <>
+      <Link
+        href={href}
+        className="group flex h-full flex-col overflow-hidden rounded-3xl border border-[#EADAF1] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+      >
+        <div className="relative h-36">
+          {backgroundUrl ? (
+            <div
+              className="absolute inset-0 bg-cover bg-center transition group-hover:scale-105"
+              style={{ backgroundImage: `url(${backgroundUrl})` }}
+            />
+          ) : (
+            <div className="absolute inset-0 bg-[#F7F1FA]" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-white via-white/70 to-transparent" />
+          <div className="relative flex h-full flex-col justify-end px-4 pb-3">
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-600">
+              {categoryLabel}
+            </span>
+            <h3 className="line-clamp-2 mt-1 text-lg font-semibold text-primary-900">
+              {offer?.title || t("offers.title")}
+            </h3>
+          </div>
+          <div className="absolute right-4 top-4 flex items-center gap-2">
+            {isOffersContext ? (
+              <span
+                className={`rounded-full px-3 py-1 text-[10px] font-semibold ${statusTone}`}
+              >
+                {statusLabel}
+              </span>
+            ) : null}
+            <button
+              type="button"
+              onClick={handleToggleFavorite}
+              disabled={isOwner}
+              className={`flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold transition ${
+                isFavorite
+                  ? "bg-primary-600 text-white"
+                  : "bg-white/90 text-primary-700"
+              } ${isOwner ? "cursor-default opacity-70" : ""}`}
+            >
+              <HeartIcon filled={isFavorite} />
+              {favoriteCount ? <span>{favoriteCount}</span> : null}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-1 flex-col gap-4 px-4 pb-4 pt-3">
+          <div className="flex items-center gap-3">
+            <UserAvatar user={offer.owner} size={44} withBorder />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-primary-900">
+                {ownerFullName}
+              </p>
+              <div className="mt-1 min-h-[28px]">
+                <UsersAvatarsList
+                  users={offer.participants || []}
+                  lastItemText={participantsText}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-auto space-y-3">
+            <OfferMainDetails offer={offer} />
+
+            {showActionButton ? (
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleOpenRequest}
+                  disabled={isRequestDisabled}
+                  className={`rounded-full px-4 py-2 text-[10px] font-semibold transition ${
+                    isRequestDisabled
+                      ? "bg-[#EADAF1] text-secondary-400"
+                      : "bg-secondary-600 text-white"
+                  }`}
+                >
+                  {t("Participate")}
+                </button>
+              </div>
+            ) : null}
+
+            {actionError ? (
+              <p className="text-xs text-danger-600">{actionError}</p>
+            ) : null}
+          </div>
+        </div>
+      </Link>
+
+      <Modal
+        open={isRequestModalOpen}
+        title={t("Participation requests")}
+        onClose={() => setRequestModalOpen(false)}
+      >
+        <p className="text-sm text-secondary-500">
+          {t("Sending participation request")}
+        </p>
+        <textarea
+          value={requestMessage}
+          onChange={(event) => setRequestMessage(event.target.value)}
+          rows={4}
+          className="mt-3 w-full rounded-2xl border border-[#EADAF1] px-4 py-3 text-sm text-secondary-500 outline-none focus:border-primary-500"
+          placeholder={t("Type your message here")}
+        />
+        {actionError ? (
+          <p className="mt-3 text-xs text-danger-600">{actionError}</p>
+        ) : null}
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+          <Button
+            variant="outline"
+            label={t("Cancel")}
+            className="w-full"
+            onClick={() => setRequestModalOpen(false)}
+            disabled={actionState === "request"}
+          />
+          <Button
+            label={t("Submit")}
+            className="w-full"
+            onClick={handleSubmitRequest}
+            loading={actionState === "request"}
+          />
+        </div>
+      </Modal>
+    </>
+  );
+}
