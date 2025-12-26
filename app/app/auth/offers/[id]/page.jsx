@@ -635,7 +635,8 @@ export default function OfferDetailsPage() {
     setTicketFeedback(t("ticket_copied"));
   };
 
-  const normalizeTicketToken = (value) => value.replace(/\s+/g, "");
+  const normalizeTicketToken = (value = "") =>
+    String(value ?? "").replace(/\s+/g, "");
 
   const handleScanTicket = async (tokenOverride) => {
     const value = normalizeTicketToken(tokenOverride || scanToken).trim();

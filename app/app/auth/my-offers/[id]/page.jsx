@@ -444,7 +444,8 @@ export default function MyOfferDetailsPage() {
     setShareFeedback("");
   };
 
-  const normalizeTicketToken = (value) => value.replace(/\s+/g, "");
+  const normalizeTicketToken = (value = "") =>
+    String(value ?? "").replace(/\s+/g, "");
 
   const handleScanTicket = async (tokenOverride) => {
     const value = normalizeTicketToken(tokenOverride || scanToken).trim();
