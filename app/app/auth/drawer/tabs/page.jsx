@@ -232,7 +232,7 @@ export default function TabsHomePage() {
         </div>
 
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
-          <div className="flex flex-1 flex-nowrap items-center gap-2 overflow-x-auto pb-1">
+          <div className="hide-scrollbar flex flex-1 flex-nowrap items-center gap-2 overflow-x-auto pb-1">
             {renderChip(
               "category-all",
               t("All"),
