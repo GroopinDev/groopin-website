@@ -166,17 +166,17 @@ export default function OfferCard({ offer, currentUserId }) {
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-white via-white/70 to-transparent" />
           <div className="relative flex h-full flex-col justify-end px-4 pb-3">
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-600">
+            <span className="block max-w-full truncate text-xs font-semibold uppercase tracking-[0.2em] text-primary-600">
               {categoryLabel}
             </span>
-            <h3 className="line-clamp-2 mt-1 text-lg font-semibold text-primary-900">
+            <h3 className="mt-1 truncate text-lg font-semibold text-primary-900">
               {offer?.title || t("offers.title")}
             </h3>
           </div>
           <div className="absolute right-4 top-4 flex items-center gap-2">
             {isOffersContext ? (
               <span
-                className={`rounded-full px-3 py-1 text-[10px] font-semibold ${statusTone}`}
+                className={`whitespace-nowrap rounded-full px-3 py-1 text-[10px] font-semibold ${statusTone}`}
               >
                 {statusLabel}
               </span>
@@ -185,7 +185,7 @@ export default function OfferCard({ offer, currentUserId }) {
               type="button"
               onClick={handleToggleFavorite}
               disabled={isOwner}
-              className={`flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold transition ${
+              className={`flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-1 text-[10px] font-semibold transition ${
                 isFavorite
                   ? "bg-primary-600 text-white"
                   : "bg-white/90 text-primary-700"

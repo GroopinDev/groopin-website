@@ -198,7 +198,7 @@ export default function TabsHomePage() {
       key={key}
       type="button"
       onClick={onClick}
-      className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
+      className={`whitespace-nowrap rounded-full border px-4 py-2 text-xs font-semibold transition ${
         isActive
           ? "border-secondary-600 bg-secondary-600 text-white"
           : "border-[#EADAF1] text-secondary-500"
@@ -232,10 +232,10 @@ export default function TabsHomePage() {
         </div>
 
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
-          <div className="flex flex-1 flex-wrap items-center gap-2 pb-1 md:flex-nowrap md:overflow-x-auto">
-              {renderChip(
-                "category-all",
-                t("All"),
+          <div className="flex flex-1 flex-nowrap items-center gap-2 overflow-x-auto pb-1">
+            {renderChip(
+              "category-all",
+              t("All"),
                 !filters.category || filters.category.length === 0,
                 () => setCategory(null)
               )}

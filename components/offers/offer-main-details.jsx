@@ -135,9 +135,9 @@ export default function OfferMainDetails({ offer }) {
           ) : null}
         </div>
       </div>
-      <div className="flex items-center gap-2 rounded-full bg-[#F7F1FA] px-3 py-2 text-primary-900">
+      <div className="flex min-w-0 items-center gap-2 rounded-full bg-[#F7F1FA] px-3 py-2 text-primary-900">
         <TagIcon />
-        <span className="font-medium">{priceLabel}</span>
+        <span className="truncate font-medium">{priceLabel}</span>
       </div>
       <div className="flex items-center gap-2 rounded-2xl bg-[#F7F1FA] px-3 py-2 text-primary-900 sm:col-span-2">
         <MapIcon />
