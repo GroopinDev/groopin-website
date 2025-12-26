@@ -639,9 +639,11 @@ export default function OfferDetailsPage() {
     String(value ?? "").replace(/\s+/g, "");
 
   const handleScanTicket = async (tokenOverride) => {
-    const value = normalizeTicketToken(tokenOverride || scanToken).trim();
+    const override =
+      typeof tokenOverride === "string" ? tokenOverride : "";
+    const value = normalizeTicketToken(override || scanToken).trim();
     if (!value || scanBusy) return;
-    if (tokenOverride) {
+    if (override) {
       setScanToken(value);
     }
     setScanBusy(true);
@@ -1050,7 +1052,7 @@ export default function OfferDetailsPage() {
                     label={t("ticket_scan_button")}
                     size="sm"
                     className="w-full"
-                    onClick={handleScanTicket}
+                    onClick={() => handleScanTicket()}
                     loading={scanBusy}
                     disabled={!scanToken.trim() || scanBusy}
                   />
