@@ -11,6 +11,92 @@ import { useI18n } from "../../../../../components/i18n-provider";
 import { apiRequest } from "../../../../lib/api-client";
 import { getUser } from "../../../../lib/session";
 
+const ioniconCache = new Map();
+
+const normalizeIoniconName = (name) => {
+  if (!name) return "";
+  return String(name).replace(/^(ios|md)-/, "");
+};
+
+const Ionicon = ({ name, size = 16, className = "" }) => {
+  const normalized = normalizeIoniconName(name);
+  const cacheKey = `${normalized}:${size}`;
+  const [svgMarkup, setSvgMarkup] = useState(() => {
+    return ioniconCache.get(cacheKey) || "";
+  });
+
+  useEffect(() => {
+    if (!normalized) return;
+    if (ioniconCache.has(cacheKey)) {
+      setSvgMarkup(ioniconCache.get(cacheKey));
+      return;
+    }
+
+    fetch(`https://unpkg.com/ionicons@5.5.2/dist/svg/${normalized}.svg`)
+      .then((response) => (response.ok ? response.text() : ""))
+      .then((rawSvg) => {
+        if (!rawSvg) return;
+        const sizedSvg = rawSvg.replace(
+          "<svg ",
+          `<svg width="${size}" height="${size}" `
+        );
+        ioniconCache.set(cacheKey, sizedSvg);
+        setSvgMarkup(sizedSvg);
+      })
+      .catch(() => {
+        // Ignore icon fetch errors and keep fallback.
+      });
+  }, [cacheKey, normalized, size]);
+
+  if (!normalized) return null;
+
+  return (
+    <span
+      className={`inline-flex items-center justify-center ${className}`}
+      style={{ width: size, height: size }}
+      aria-hidden="true"
+      dangerouslySetInnerHTML={{ __html: svgMarkup || "" }}
+    />
+  );
+};
+
+const SearchOutlineIcon = ({ size = 20, className = "" }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 512 512"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="32"
+    strokeMiterlimit="10"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d="M221.09 64a157.09 157.09 0 10157.09 157.09A157.1 157.1 0 00221.09 64z" />
+    <path
+      d="M338.29 338.29L448 448"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+const FunnelOutlineIcon = ({ size = 20, className = "" }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 512 512"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="32"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d="M35.4 87.12l168.65 196.44A16.07 16.07 0 01208 294v119.32a7.93 7.93 0 005.39 7.59l80.15 26.67A7.94 7.94 0 00304 440V294a16.07 16.07 0 014-10.44L476.6 87.12A14 14 0 00466 64H46.05A14 14 0 0035.4 87.12z" />
+  </svg>
+);
+
 const buildFilterParams = (filters) => {
   const params = new URLSearchParams();
 
@@ -194,17 +280,24 @@ export default function TabsHomePage() {
     setLocalFilters((prev) => ({ ...prev, category: nextCategory }));
   };
 
-  const renderChip = (key, label, isActive, onClick) => (
+  const renderChip = (key, label, isActive, onClick, iconName = null) => (
     <button
       key={key}
       type="button"
       onClick={onClick}
-      className={`whitespace-nowrap rounded-full border px-4 py-2 text-xs font-semibold transition ${
+      className={`flex items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-normal transition ${
         isActive
-          ? "border-secondary-600 bg-secondary-600 text-white"
-          : "border-[#EADAF1] text-secondary-500"
+          ? "border-secondary-500 bg-secondary-500 text-white"
+          : "border-[#A564C2] bg-white text-secondary-400"
       }`}
     >
+      {iconName ? (
+        <Ionicon
+          name={iconName}
+          size={16}
+          className={isActive ? "text-white" : "text-primary-800"}
+        />
+      ) : null}
       {label}
     </button>
   );
@@ -212,23 +305,33 @@ export default function TabsHomePage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center">
-          <input
-            value={searchValue}
-            onChange={(event) => setSearchValue(event.target.value)}
-            placeholder={t("Search")}
-            className="w-full rounded-full border border-[#EADAF1] px-4 py-2 text-sm text-secondary-600 outline-none focus:border-secondary-600"
-          />
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1">
+            <SearchOutlineIcon
+              size={20}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-800"
+            />
+            <input
+              value={searchValue}
+              onChange={(event) => setSearchValue(event.target.value)}
+              placeholder={t("Search")}
+              className="w-full rounded-full border border-[#EADAF1] py-2 pl-11 pr-4 text-sm text-primary-900 outline-none focus:border-secondary-500"
+            />
+          </div>
           <button
             type="button"
             onClick={() => setFilterOpen(true)}
-            className={`flex h-11 items-center justify-center rounded-full border px-4 text-sm font-semibold transition md:w-36 ${
+            className={`flex h-11 w-11 items-center justify-center rounded-lg border transition ${
               hasFilters
-                ? "border-secondary-600 bg-secondary-600 text-white"
-                : "border-[#EADAF1] text-secondary-600"
+                ? "border-secondary-500 bg-secondary-500 text-white"
+                : "border-[#EADAF1] bg-white text-primary-800"
             }`}
+            aria-label={t("Filters")}
           >
-            {t("Filters")}
+            <FunnelOutlineIcon
+              size={20}
+              className={hasFilters ? "text-white" : "text-primary-800"}
+            />
           </button>
         </div>
 
@@ -237,17 +340,18 @@ export default function TabsHomePage() {
             {renderChip(
               "category-all",
               t("All"),
-                !filters.category || filters.category.length === 0,
-                () => setCategory(null)
-              )}
-              {categories.map((category, index) =>
-                renderChip(
-                  `category-${category.id ?? category.name ?? index}`,
-                  category.name,
-                  filters.category?.includes(category.id),
-                  () => setCategory(category.id)
-                )
-              )}
+              !filters.category || filters.category.length === 0,
+              () => setCategory(null)
+            )}
+            {categories.map((category, index) =>
+              renderChip(
+                `category-${category.id ?? category.name ?? index}`,
+                category.name,
+                filters.category?.includes(category.id),
+                () => setCategory(category.id),
+                category?.icon || category?.parent?.icon
+              )
+            )}
           </div>
         </div>
       </div>
@@ -547,11 +651,11 @@ export default function TabsHomePage() {
 
       <Link
         href="/app/auth/my-offers/create"
-        className="fixed bottom-20 right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-secondary-600 text-white shadow-lg transition hover:bg-secondary-500"
+        className="fixed bottom-20 right-4 z-40 flex h-[60px] w-[60px] items-center justify-center rounded-full border border-secondary-500/20 bg-white/80 text-secondary-500 shadow-lg backdrop-blur transition hover:border-secondary-500/30 hover:bg-white"
         aria-label={t("offers.create_offer")}
         title={t("offers.create_offer")}
       >
-        <PlusIcon size={22} className="text-white" />
+        <PlusIcon size={28} strokeWidth={2.3} className="text-secondary-500" />
       </Link>
     </div>
   );

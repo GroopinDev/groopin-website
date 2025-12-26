@@ -10,8 +10,8 @@ export default function Home() {
   const messageClass = useMemo(() => {
     if (!status) return "hidden";
     return status.type === "error"
-      ? "col-span-full mt-2 rounded-lg p-4 text-sm bg-red-100 text-red-700"
-      : "col-span-full mt-2 rounded-lg p-4 text-sm bg-green-100 text-green-700";
+      ? "col-span-full mt-2 rounded-lg p-4 text-sm bg-danger-100 text-danger-700"
+      : "col-span-full mt-2 rounded-lg p-4 text-sm bg-success-100 text-success-700";
   }, [status]);
 
   const onSubmit = async (event) => {
@@ -87,7 +87,7 @@ export default function Home() {
 
       <div className="relative pt-20 sm:pt-24 lg:pt-28">
         <svg
-          className="absolute inset-0 -z-10 opacity-25 size-full stroke-gray-200 [mask-image:radial-gradient(100%_100%_at_top_right,white,transparent)]"
+          className="absolute inset-0 -z-10 opacity-25 size-full stroke-charcoal-200 [mask-image:radial-gradient(100%_100%_at_top_right,white,transparent)]"
           aria-hidden="true"
         >
           <defs>
@@ -95,7 +95,7 @@ export default function Home() {
               <path d="M100 200V.5M.5 .5H200" fill="none" />
             </pattern>
           </defs>
-          <svg x="50%" y="-1" className="overflow-visible fill-gray-50">
+          <svg x="50%" y="-1" className="overflow-visible fill-neutral-50">
             <path d="M-100.5 0h201v201h-201Z M699.5 0h201v201h-201Z M499.5 400h201v201h-201Z M-300.5 600h201v201h-201Z" strokeWidth="0" />
           </svg>
           <rect width="100%" height="100%" strokeWidth="0" fill="url(#83fd4e5a-9d52-42fc-97b6-718e5d7ee527)" />
@@ -104,7 +104,7 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-16 lg:py-28 lg:flex lg:items-center lg:gap-x-12">
           <div className="mx-auto max-w-2xl lg:mx-0 lg:flex-auto">
             <div className="flex">
-              <div className="relative flex items-center gap-x-3 rounded-full bg-white px-4 py-1 text-sm/6 text-gray-600 ring-1 ring-gray-900/10 shadow-sm">
+              <div className="relative flex items-center gap-x-3 rounded-full bg-white px-4 py-1 text-sm/6 text-charcoal-600 ring-1 ring-charcoal-900/10 shadow-sm">
                 <span className="absolute inset-0" aria-hidden="true"></span>
                 We're launching soon
               </div>
@@ -114,13 +114,13 @@ export default function Home() {
               Where paths cross, adventures begin
             </h1>
 
-            <div className="mt-6 sm:mt-8 text-pretty text-base sm:text-lg font-medium text-gray-500 space-y-4">
+            <div className="mt-6 sm:mt-8 text-pretty text-base sm:text-lg font-medium text-charcoal-500 space-y-4">
               <p>
                 Looking to share the things you love with others? <span className="text-secondary-600 font-bold">Groopin</span> makes it easy.
                 With <span className="text-secondary-600 font-bold">Groopin</span>, connect with like-minded people and share your passions across
                 categories like sports, culture, travel, and dining.
               </p>
-              <ul className="text-gray-500 list-disc list-inside space-y-1">
+              <ul className="text-charcoal-500 list-disc list-inside space-y-1">
                 <li>Create or join activities in seconds.</li>
                 <li>Meet, share, and build connections.</li>
                 <li>Transform passions into unforgettable experiences.</li>
@@ -136,13 +136,13 @@ export default function Home() {
                 >
                   Go to the web app
                 </Link>
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-charcoal-500">
                   Already a member? Skip the waitlist.
                 </span>
               </div>
               <form onSubmit={onSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6 w-full">
                 <div>
-                  <label htmlFor="name" className="block text-base/6 font-medium text-gray-900">
+                  <label htmlFor="name" className="block text-base/6 font-medium text-charcoal-900">
                     Name
                   </label>
                   <div className="mt-2">
@@ -150,7 +150,7 @@ export default function Home() {
                       type="text"
                       name="name"
                       id="name"
-                      className="block w-full rounded-md bg-white px-4 py-3 text-base text-gray-900 outline outline-1 -outline-offset-1 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-primary-500 sm:text-base/6 outline-gray-300"
+                      className="block w-full rounded-md bg-white px-4 py-3 text-base text-charcoal-900 outline outline-1 -outline-offset-1 placeholder:text-charcoal-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-primary-500 sm:text-base/6 outline-charcoal-300"
                       placeholder="Khalid BOUZIANE"
                       required
                       disabled={submitting}
@@ -158,7 +158,7 @@ export default function Home() {
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="email" className="block text-base/6 font-medium text-gray-900">
+                  <label htmlFor="email" className="block text-base/6 font-medium text-charcoal-900">
                     Email
                   </label>
                   <div className="mt-2">
@@ -166,7 +166,7 @@ export default function Home() {
                       type="email"
                       name="email"
                       id="email"
-                      className="block w-full rounded-md bg-white px-4 py-3 text-base text-gray-900 outline outline-1 -outline-offset-1 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-primary-500 sm:text-base/6 outline-gray-300"
+                      className="block w-full rounded-md bg-white px-4 py-3 text-base text-charcoal-900 outline outline-1 -outline-offset-1 placeholder:text-charcoal-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-primary-500 sm:text-base/6 outline-charcoal-300"
                       placeholder="khalid@gmail.com"
                       required
                       disabled={submitting}

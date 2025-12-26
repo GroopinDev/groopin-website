@@ -93,7 +93,7 @@ export default function OfferCard({ offer, currentUserId }) {
     if (isClosed) return "bg-secondary-400 text-white";
     if (isPending) return "bg-[#D59500] text-white";
     if (isParticipant) return "bg-primary-600 text-white";
-    return "bg-secondary-600 text-white";
+    return "bg-secondary-500 text-white";
   })();
   const isRequestDisabled =
     isOwner || isParticipant || isPending || isClosed || actionState !== "idle";
@@ -199,7 +199,7 @@ export default function OfferCard({ offer, currentUserId }) {
 
         <div className="flex flex-1 flex-col gap-4 px-4 pb-4 pt-3">
           <div className="flex items-center gap-3">
-            <UserAvatar user={offer.owner} size={44} withBorder />
+            <UserAvatar user={offer.owner} size={52} withBorder />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-primary-900">
                 {ownerFullName}
@@ -225,10 +225,26 @@ export default function OfferCard({ offer, currentUserId }) {
                   className={`rounded-full px-4 py-2 text-[10px] font-semibold transition ${
                     isRequestDisabled
                       ? "bg-[#EADAF1] text-secondary-400"
-                      : "bg-secondary-600 text-white"
+                      : "bg-gradient-to-r from-primary-500 via-[#822485] to-secondary-500 text-white"
                   }`}
                 >
-                  {t("Participate")}
+                  <span className="inline-flex items-center gap-2">
+                    {t("Participate")}
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M5 12h14" />
+                      <path d="M13 5l6 7-6 7" />
+                    </svg>
+                  </span>
                 </button>
               </div>
             ) : null}

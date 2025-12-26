@@ -39,7 +39,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={lato.variable}>
-      <body className="bg-white text-gray-900 font-sans antialiased">
+      <body className="bg-white text-charcoal-900 font-sans antialiased">
         <I18nProvider>{children}</I18nProvider>
       </body>
     </html>

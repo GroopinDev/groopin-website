@@ -31,10 +31,10 @@ export default function TermsAndConditionsPage() {
       ) : (
         sections.map(([key, section], index) => (
           <section key={key} className="mb-6">
-            <h2 className="mb-2 text-lg font-semibold text-gray-800">
+            <h2 className="mb-2 text-lg font-semibold text-charcoal-800">
               {index + 1}. {section?.title || t("Details")}
             </h2>
-            <p className="whitespace-pre-line text-base text-gray-700">
+            <p className="whitespace-pre-line text-base text-charcoal-700">
               {section?.content || "-"}
             </p>
           </section>

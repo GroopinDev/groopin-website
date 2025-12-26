@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 
@@ -10,8 +10,34 @@ import UsersAvatarsList from "../../../../../components/user/users-avatars-list"
 import Button from "../../../../../components/ui/button";
 import Modal from "../../../../../components/ui/modal";
 import ConfirmModal from "../../../../../components/ui/confirm-modal";
+import QrCodeCanvas, {
+  drawQrToCanvas
+} from "../../../../../components/ui/qr-code";
 import { useI18n } from "../../../../../components/i18n-provider";
 import { apiRequest } from "../../../../lib/api-client";
+
+const drawRoundedRect = (ctx, x, y, width, height, radius) => {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + width, y, x + width, y + height, radius);
+  ctx.arcTo(x + width, y + height, x, y + height, radius);
+  ctx.arcTo(x, y + height, x, y, radius);
+  ctx.arcTo(x, y, x + width, y, radius);
+  ctx.closePath();
+};
+
+const loadImage = (src) =>
+  new Promise((resolve, reject) => {
+    if (!src) {
+      reject(new Error("Missing image source"));
+      return;
+    }
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Failed to load image"));
+    img.src = src;
+  });
 
 export default function MyOfferDetailsPage() {
   const params = useParams();
@@ -23,6 +49,13 @@ export default function MyOfferDetailsPage() {
   const [actionError, setActionError] = useState("");
   const [isParticipantsOpen, setParticipantsOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [isShareOpen, setShareOpen] = useState(false);
+  const [shareFeedback, setShareFeedback] = useState("");
+  const [shareBusy, setShareBusy] = useState(false);
+  const shareUrl = useMemo(() => {
+    if (typeof window === "undefined" || !offer?.id) return "";
+    return `${window.location.origin}/app/auth/offers/${offer.id}`;
+  }, [offer?.id]);
 
   const loadOffer = async () => {
     setStatus("loading");
@@ -75,6 +108,26 @@ export default function MyOfferDetailsPage() {
   const otherParticipants = participantsList.filter(
     (user) => user.id !== offer?.owner?.id
   );
+  const ownerName = `${offer?.owner?.first_name || ""} ${
+    offer?.owner?.last_name || ""
+  }`.trim();
+  const ownerAvatarUrl =
+    offer?.owner?.avatar_image_url ||
+    offer?.owner?.avatar_url ||
+    offer?.owner?.avatar ||
+    offer?.owner?.image ||
+    offer?.owner?.image_url ||
+    offer?.owner?.photo_url ||
+    offer?.owner?.photo ||
+    offer?.owner?.picture ||
+    offer?.owner?.profile_image_url ||
+    offer?.owner?.profile_image ||
+    "";
+  const displayAvatarUrl = ownerAvatarUrl
+    ? `/api/proxy-image?url=${encodeURIComponent(ownerAvatarUrl)}`
+    : "/assets/images/splash-icon.png";
+  const conversationId = offer?.conversation_id;
+  const canOpenChat = Boolean(conversationId);
 
   const getAge = (user) => {
     if (typeof user?.age === "number") return user.age;
@@ -112,6 +165,182 @@ export default function MyOfferDetailsPage() {
       setActionError(error?.message || t("general.error_has_occurred"));
       setActionState("idle");
     }
+  };
+
+  const handleDownloadShareCard = async () => {
+    if (!shareUrl) return;
+    setShareBusy(true);
+    setShareFeedback("");
+    try {
+      const canvas = document.createElement("canvas");
+      const width = 720;
+      const height = 980;
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas not supported");
+
+      const gradient = ctx.createLinearGradient(0, 0, 0, height);
+      gradient.addColorStop(0, "#FDEAFB");
+      gradient.addColorStop(1, "#B12587");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+
+      const cardWidth = 560;
+      const cardHeight = 760;
+      const cardX = (width - cardWidth) / 2;
+      const cardY = 120;
+      ctx.save();
+      ctx.shadowColor = "rgba(0, 0, 0, 0.15)";
+      ctx.shadowBlur = 20;
+      ctx.fillStyle = "#FFFFFF";
+      drawRoundedRect(ctx, cardX, cardY, cardWidth, cardHeight, 36);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      drawRoundedRect(ctx, cardX, cardY, cardWidth, cardHeight, 36);
+      ctx.clip();
+
+      const avatarSize = 96;
+      const avatarX = cardX + (cardWidth - avatarSize) / 2;
+      const avatarY = cardY + 32;
+      let avatarLoaded = false;
+      const avatarSource = ownerAvatarUrl
+        ? `/api/proxy-image?url=${encodeURIComponent(ownerAvatarUrl)}`
+        : `${window.location.origin}/assets/images/splash-icon.png`;
+      if (avatarSource) {
+        try {
+          const avatar = await loadImage(avatarSource);
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(
+            avatarX + avatarSize / 2,
+            avatarY + avatarSize / 2,
+            avatarSize / 2,
+            0,
+            Math.PI * 2
+          );
+          ctx.closePath();
+          ctx.clip();
+          ctx.drawImage(avatar, avatarX, avatarY, avatarSize, avatarSize);
+          ctx.restore();
+          avatarLoaded = true;
+        } catch {
+          // fallback to initials below
+        }
+      }
+
+      if (!avatarLoaded) {
+        ctx.fillStyle = "#F7F1FA";
+        ctx.beginPath();
+        ctx.arc(
+          avatarX + avatarSize / 2,
+          avatarY + avatarSize / 2,
+          avatarSize / 2,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+      }
+
+      ctx.fillStyle = "#1E1E1E";
+      ctx.font = "600 26px Lato, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "alphabetic";
+      ctx.fillText(
+        ownerName || offer?.owner?.name || "-",
+        cardX + cardWidth / 2,
+        avatarY + avatarSize + 46
+      );
+
+      const qrSize = 360;
+      const qrX = cardX + (cardWidth - qrSize) / 2;
+      const qrY = cardY + 200;
+      const clearRect = drawQrToCanvas(ctx, shareUrl, {
+        x: qrX,
+        y: qrY,
+        size: qrSize,
+        margin: 12,
+        color: "#B12587",
+        backgroundColor: "#ffffff",
+        gradientColors: ["#662483", "#822485", "#B12587"],
+        ecc: "H",
+        clearCenterFraction: 0.28,
+        clearCenterRadius: 12
+      });
+
+      if (clearRect) {
+        try {
+          const icon = await loadImage(
+            `${window.location.origin}/assets/images/splash-icon.png`
+          );
+          const maxSize = Math.floor(clearRect.size * 0.7);
+          const ratio = icon.width / icon.height || 1;
+          const iconWidth = ratio >= 1 ? maxSize : Math.round(maxSize * ratio);
+          const iconHeight = ratio >= 1 ? Math.round(maxSize / ratio) : maxSize;
+          const iconX = clearRect.x + (clearRect.size - iconWidth) / 2;
+          const iconY = clearRect.y + (clearRect.size - iconHeight) / 2;
+          ctx.drawImage(icon, iconX, iconY, iconWidth, iconHeight);
+        } catch {
+          // ignore icon load failures
+        }
+      }
+
+      ctx.restore();
+
+      const dataUrl = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = `groopin-offer-${offer.id}.png`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setShareFeedback(t("share_card_ready"));
+    } catch {
+      setShareFeedback(t("share_card_failed"));
+    } finally {
+      setShareBusy(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = shareUrl;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+    setShareFeedback(t("link_copied"));
+  };
+
+  const handleNativeShare = async () => {
+    if (!shareUrl) return;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: offer?.title || "Groopin",
+          text: t("share_offer_text", { title: offer?.title || "" }),
+          url: shareUrl
+        });
+        return;
+      } catch {
+        // fall back to copy
+      }
+    }
+    handleCopyLink();
+  };
+
+  const handleCloseShare = () => {
+    setShareOpen(false);
+    setShareFeedback("");
   };
 
   return (
@@ -245,6 +474,23 @@ export default function MyOfferDetailsPage() {
               Owner actions
             </h3>
             <div className="mt-4 space-y-3">
+              <Button
+                label={t("share")}
+                size="lg"
+                className="w-full"
+                onClick={() => setShareOpen(true)}
+              />
+              {canOpenChat ? (
+                <Button
+                  variant="default"
+                  label={t("Group chat")}
+                  size="lg"
+                  className="w-full"
+                  onClick={() =>
+                    router.push(`/app/auth/conversations/${conversationId}`)
+                  }
+                />
+              ) : null}
               <Link href={`/app/auth/my-offers/${offer.id}/edit`}>
                 <Button
                   label={isDraft ? "Edit draft" : t("Edit")}
@@ -359,6 +605,108 @@ export default function MyOfferDetailsPage() {
           <Link href={`/app/auth/my-offers/${offer.id}/participants`} className="w-full">
             <Button label={t("Participants information")} className="w-full" />
           </Link>
+        </div>
+      </Modal>
+
+      <Modal
+        open={isShareOpen}
+        title={t("share_offer")}
+        onClose={handleCloseShare}
+      >
+        <p className="text-sm text-secondary-500">
+          {t("share_offer_hint")}
+        </p>
+
+        <div className="mt-4 rounded-2xl border border-[#EADAF1] bg-white px-4 py-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-secondary-400">
+            {t("share_link")}
+          </p>
+          <p className="mt-2 break-all text-sm font-semibold text-primary-900">
+            {shareUrl || "-"}
+          </p>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <Button
+              variant="outline"
+              label={t("copy_link")}
+              className="w-full"
+              onClick={handleCopyLink}
+              disabled={!shareUrl}
+            />
+            <Button
+              label={t("share")}
+              className="w-full"
+              onClick={handleNativeShare}
+              disabled={!shareUrl}
+            />
+          </div>
+          {shareFeedback ? (
+            <p className="mt-3 text-xs text-secondary-500">
+              {shareFeedback}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="mt-4 rounded-3xl border border-[#EADAF1] bg-white px-5 py-6">
+          <div className="flex flex-col items-center gap-2">
+            {displayAvatarUrl ? (
+              <img
+                src={displayAvatarUrl}
+                alt={ownerName || offer.owner?.name || "Organizer avatar"}
+                className="h-14 w-14 rounded-full object-cover ring-2 ring-secondary-500/30"
+              />
+            ) : (
+              <div className="h-14 w-14 rounded-full border border-[#EADAF1] bg-[#F7F1FA]" />
+            )}
+            <p className="text-xs uppercase tracking-[0.2em] text-secondary-400">
+              {t("Organizer")}
+            </p>
+            <p className="text-sm font-semibold text-primary-900">
+              {offer.owner?.first_name} {offer.owner?.last_name}
+            </p>
+          </div>
+          <p className="mt-4 text-center text-sm text-secondary-500">
+            {t("share_qr_hint")}
+          </p>
+          {shareUrl ? (
+            <>
+              <div className="mt-4 flex items-center justify-center">
+                <div className="relative rounded-3xl border border-[#EADAF1] bg-white p-2">
+                  <QrCodeCanvas
+                    value={shareUrl}
+                    size={208}
+                    margin={12}
+                    color="#B12587"
+                    backgroundColor="#ffffff"
+                    gradientColors={["#662483", "#822485", "#B12587"]}
+                    ecc="H"
+                    clearCenterFraction={0.28}
+                    clearCenterRadius={8}
+                    className="h-52 w-52"
+                  />
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-md">
+                      <img
+                        src="/assets/images/splash-icon.png"
+                        alt="Groopin"
+                        className="h-10 w-10 object-contain"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                label={
+                  shareBusy
+                    ? t("share_card_generating")
+                    : t("download_share_card")
+                }
+                className="mt-5 w-full"
+                onClick={handleDownloadShareCard}
+                disabled={shareBusy}
+              />
+            </>
+          ) : null}
         </div>
       </Modal>
 

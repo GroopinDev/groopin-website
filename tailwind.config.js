@@ -4,6 +4,7 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
+        sans: ["var(--font-lato)", "sans-serif"],
         black: ["var(--font-lato)", "sans-serif"],
         extrabold: ["var(--font-lato)", "sans-serif"],
         bold: ["var(--font-lato)", "sans-serif"],

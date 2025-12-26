@@ -29,13 +29,13 @@ export default function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4 py-6"
       role="dialog"
       aria-modal="true"
       onClick={() => onClose?.()}
     >
       <div
-        className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl"
+        className="w-full max-w-lg max-h-[calc(100vh-3rem)] rounded-3xl bg-white p-6 shadow-xl"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-4">
@@ -50,7 +50,9 @@ export default function Modal({
             {resolvedCloseLabel}
           </button>
         </div>
-        <div className="mt-4">{children}</div>
+        <div className="mt-4 max-h-[calc(100vh-12rem)] overflow-y-auto pb-6 pr-1">
+          {children}
+        </div>
       </div>
     </div>
   );

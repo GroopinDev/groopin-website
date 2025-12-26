@@ -222,10 +222,10 @@ export default function AppShell({ children }) {
         <div className="mx-auto flex h-16 w-full max-w-5xl items-center px-4 md:px-6">
           <button
             type="button"
-            className="text-primary-900"
+            className="text-primary-800"
             onClick={() => setDrawerOpen(true)}
           >
-            <Bars3Icon size={26} className="text-primary-900" />
+            <Bars3Icon size={26} className="text-primary-800" />
           </button>
           <div className="flex flex-1 justify-center">
             <AnimatedLogo width={90} height={40} />
@@ -233,11 +233,11 @@ export default function AppShell({ children }) {
           <button
             type="button"
             onClick={() => router.push("/app/auth/drawer/notifications")}
-            className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[#EADAF1] text-secondary-600 transition hover:bg-[#F7F1FA]"
+            className="relative flex items-center justify-center text-primary-800 transition"
           >
-            <BellIcon size={22} className="text-primary-900" />
+            <BellIcon size={22} className="text-primary-800" />
             {unreadCount > 0 ? (
-              <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-secondary-600 px-1 text-[10px] text-white">
+              <span className="absolute -right-2 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-danger-500 px-1 text-[10px] text-white">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             ) : null}
@@ -263,9 +263,9 @@ export default function AppShell({ children }) {
       >
         {user ? (
           <div className="space-y-6 border-b border-[#D0D0D4] pb-6">
-            <div className="flex flex-col items-center gap-3">
+          <div className="flex flex-col items-center gap-3">
               <UserAvatar user={user} size={90} withBorder />
-              <p className="text-2xl font-semibold text-primary-900">
+              <p className="text-2xl font-semibold text-primary-800">
                 {user.name || `${user.first_name} ${user.last_name}`}
               </p>
               <div className="rounded-full border border-[#EADAF1] px-3 py-2 text-sm text-secondary-400">
@@ -314,7 +314,7 @@ export default function AppShell({ children }) {
                 key={tab.href}
                 href={tab.href}
                 className={`flex flex-col items-center gap-1 ${
-                  tab.active ? "text-secondary-600" : "text-secondary-400"
+                  tab.active ? "text-secondary-500" : "text-secondary-400"
                 }`}
                 aria-current={tab.active ? "page" : undefined}
               >
@@ -325,7 +325,7 @@ export default function AppShell({ children }) {
                     <Icon
                       size={22}
                       className={
-                        tab.active ? "text-secondary-600" : "text-secondary-400"
+                        tab.active ? "text-secondary-500" : "text-secondary-400"
                       }
                     />
                   )}
@@ -349,7 +349,7 @@ function ProfileIcon({ active, user }) {
   if (user) {
     return (
       <span
-        className={`rounded-full ${active ? "ring-2 ring-secondary-600 ring-offset-2 ring-offset-white" : ""}`}
+        className={`rounded-full ${active ? "ring-2 ring-secondary-500 ring-offset-2 ring-offset-white" : ""}`}
       >
         <UserAvatar user={user} size={26} withBorder={active} />
       </span>
@@ -365,7 +365,7 @@ function ProfileIcon({ active, user }) {
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={active ? "text-secondary-600" : "text-secondary-400"}
+      className={active ? "text-secondary-500" : "text-secondary-400"}
     >
       <circle cx="12" cy="8" r="3.5" />
       <path d="M4 19c1.8-3.5 5-5 8-5s6.2 1.5 8 5" />
