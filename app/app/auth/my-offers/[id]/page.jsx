@@ -56,6 +56,10 @@ export default function MyOfferDetailsPage() {
   const [scanBusy, setScanBusy] = useState(false);
   const [scanResult, setScanResult] = useState(null);
   const [scanError, setScanError] = useState("");
+  const [checkedInEntries, setCheckedInEntries] = useState([]);
+  const [checkedInCount, setCheckedInCount] = useState(0);
+  const [checkedInError, setCheckedInError] = useState("");
+  const [ownerTab, setOwnerTab] = useState("overview");
   const [isScannerOpen, setScannerOpen] = useState(false);
   const scanVideoRef = useRef(null);
   const scanStreamRef = useRef(null);
@@ -64,6 +68,14 @@ export default function MyOfferDetailsPage() {
     if (typeof window === "undefined" || !offer?.id) return "";
     return `${window.location.origin}/app/auth/offers/${offer.id}`;
   }, [offer?.id]);
+  const ownerTabs = useMemo(
+    () => [
+      { id: "overview", label: t("Overview") },
+      { id: "participants", label: t("Participants") },
+      { id: "checkin", label: t("ticket_scan_title") }
+    ],
+    [t]
+  );
 
   const loadOffer = async () => {
     setStatus("loading");
@@ -76,8 +88,37 @@ export default function MyOfferDetailsPage() {
     }
   };
 
+  const loadCheckins = async () => {
+    if (!offer?.id) return;
+    setCheckedInError("");
+    try {
+      const payload = await apiRequest(`offers/${offer.id}/checkins?limit=15`);
+      const nextEntries = payload?.data || [];
+      const nextCount = Number(payload?.meta?.count);
+      setCheckedInEntries(nextEntries);
+      setCheckedInCount(
+        Number.isFinite(nextCount) ? nextCount : nextEntries.length
+      );
+    } catch (error) {
+      setCheckedInError(error?.message || t("ticket_checkins_failed"));
+    }
+  };
+
   useEffect(() => {
     loadOffer();
+  }, [params.id]);
+
+  useEffect(() => {
+    if (!offer?.id) return;
+    loadCheckins();
+  }, [offer?.id, t]);
+
+  useEffect(() => {
+    setScanResult(null);
+    setScanError("");
+    setCheckedInEntries([]);
+    setCheckedInCount(0);
+    setCheckedInError("");
   }, [params.id]);
 
   useEffect(() => {
@@ -464,6 +505,9 @@ export default function MyOfferDetailsPage() {
         body: { token: value }
       });
       setScanResult(payload || null);
+      if (payload?.ticket?.id && payload?.user) {
+        loadCheckins();
+      }
     } catch (error) {
       setScanError(error?.message || t("ticket_scan_failed"));
     } finally {
@@ -506,75 +550,312 @@ export default function MyOfferDetailsPage() {
 
       <div className="grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
         <section className="space-y-6">
-          <div className="rounded-3xl border border-[#EADAF1] bg-white p-5">
-            <OfferMainDetails offer={offer} />
+          <div className="rounded-3xl border border-[#EADAF1] bg-white p-2">
+            <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
+              {ownerTabs.map((tab) => {
+                const isActive = ownerTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setOwnerTab(tab.id)}
+                    className={`shrink-0 rounded-full px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] transition sm:flex-1 sm:px-4 sm:text-xs sm:tracking-[0.2em] ${
+                      isActive
+                        ? "bg-primary-600 text-white shadow-sm"
+                        : "text-secondary-500 hover:text-primary-700"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="rounded-3xl border border-[#EADAF1] bg-white p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
+          {ownerTab === "overview" ? (
+            <>
+              <div className="rounded-3xl border border-[#EADAF1] bg-white p-5">
+                <OfferMainDetails offer={offer} />
+              </div>
+
+              <div className="rounded-3xl border border-[#EADAF1] bg-white p-5">
                 <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-primary-700">
-                  {t("Participants")}
+                  {t("Group Preferences")}
                 </h2>
-                <p className="mt-2 text-sm text-secondary-400">
-                  {participantsText} {t("Participants")}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {dynamicEntries.length ? (
+                    dynamicEntries.map(([key, value]) => (
+                      <span
+                        key={key}
+                        className="rounded-full bg-primary-600/10 px-3 py-2 text-xs font-semibold text-primary-900"
+                      >
+                        {value}
+                      </span>
+                    ))
+                  ) : (
+                    <p className="text-sm text-secondary-400">
+                      {t("No Preferences for this group")}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-[#EADAF1] bg-white p-5">
+                <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-primary-700">
+                  {t("About")}
+                </h2>
+                <p className="mt-3 text-sm text-secondary-500">
+                  {offer.description || t("No description exists")}
                 </p>
               </div>
-              <UsersAvatarsList
-                users={offer.participants || []}
-                lastItemText={participantsText}
-              />
-            </div>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => setParticipantsOpen(true)}
-                className="inline-flex items-center rounded-full bg-primary-600 px-4 py-2 text-xs font-semibold text-white"
-              >
-                {t("Participants information")}
-              </button>
-              {pendingCount ? (
-                <span className="inline-flex items-center rounded-full bg-[#D59500] px-4 py-2 text-xs font-semibold text-white">
-                  {t("Participation requests")}: {pendingCount}
-                </span>
-              ) : (
-                <span className="inline-flex items-center rounded-full bg-[#F7F1FA] px-4 py-2 text-xs font-semibold text-secondary-600">
-                  {t("No requests")}
-                </span>
-              )}
-            </div>
-          </div>
+            </>
+          ) : null}
 
-          <div className="rounded-3xl border border-[#EADAF1] bg-white p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-primary-700">
-              {t("Group Preferences")}
-            </h2>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {dynamicEntries.length ? (
-                dynamicEntries.map(([key, value]) => (
-                  <span
-                    key={key}
-                    className="rounded-full bg-primary-600/10 px-3 py-2 text-xs font-semibold text-primary-900"
+          {ownerTab === "participants" ? (
+            <>
+              <div className="rounded-3xl border border-[#EADAF1] bg-white p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-primary-700">
+                      {t("Participants")}
+                    </h2>
+                    <p className="mt-2 text-sm text-secondary-400">
+                      {participantsText} {t("Participants")}
+                    </p>
+                  </div>
+                  <UsersAvatarsList
+                    users={offer.participants || []}
+                    lastItemText={participantsText}
+                  />
+                </div>
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl bg-[#F7F1FA] p-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-secondary-500">
+                      {t("Participants")}
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-primary-900">
+                      {offer.participants_count || 0}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-[#FFF5E5] p-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#D59500]">
+                      {t("Pending")}
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-[#9B6400]">
+                      {pendingCount}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-[#F7F1FA] p-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-secondary-500">
+                      {t("ticket_checked_in_count")}
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-primary-900">
+                      {checkedInCount}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setParticipantsOpen(true)}
+                    className="inline-flex items-center rounded-full bg-primary-600 px-4 py-2 text-xs font-semibold text-white"
                   >
-                    {value}
-                  </span>
-                ))
-              ) : (
-                <p className="text-sm text-secondary-400">
-                  {t("No Preferences for this group")}
-                </p>
-              )}
-            </div>
-          </div>
+                    {t("Participants information")}
+                  </button>
+                  {pendingCount ? (
+                    <span className="inline-flex items-center rounded-full bg-[#D59500] px-4 py-2 text-xs font-semibold text-white">
+                      {t("Participation requests")}: {pendingCount}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center rounded-full bg-[#F7F1FA] px-4 py-2 text-xs font-semibold text-secondary-600">
+                      {t("No requests")}
+                    </span>
+                  )}
+                </div>
+              </div>
 
-          <div className="rounded-3xl border border-[#EADAF1] bg-white p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-primary-700">
-              {t("About")}
-            </h2>
-            <p className="mt-3 text-sm text-secondary-500">
-              {offer.description || t("No description exists")}
-            </p>
-          </div>
+              <div className="rounded-3xl border border-[#EADAF1] bg-white p-5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-primary-900">
+                    {t("Participants")}
+                  </h3>
+                  <span className="text-xs text-secondary-400">
+                    {otherParticipants.length}
+                  </span>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {otherParticipants.length === 0 ? (
+                    <p className="text-sm text-secondary-400">
+                      {t("No participants yet")}
+                    </p>
+                  ) : (
+                    otherParticipants.map((user) => (
+                      <Link
+                        key={user.id}
+                        href={`/app/auth/users/${user.id}`}
+                        className="flex items-center justify-between gap-3 rounded-2xl border border-[#EADAF1] bg-white p-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <UserAvatar user={user} size={44} withBorder />
+                          <div>
+                            <p className="text-sm font-semibold text-primary-900">
+                              {user.first_name} {user.last_name}
+                            </p>
+                            <p className="text-xs text-secondary-400">
+                              {getAge(user)
+                                ? t("years_old", { count: getAge(user) })
+                                : ""}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-xs font-semibold text-secondary-500">
+                          {t("Profile")}
+                        </span>
+                      </Link>
+                    ))
+                  )}
+                </div>
+              </div>
+            </>
+          ) : null}
+
+          {ownerTab === "checkin" ? (
+            <>
+              <div className="rounded-3xl border border-[#EADAF1] bg-white p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-primary-700">
+                      {t("ticket_scan_title")}
+                    </h2>
+                    <p className="mt-2 text-sm text-secondary-500">
+                      {t("ticket_scan_hint")}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    label={t("ticket_scan_camera")}
+                    className="px-4 py-2 text-xs"
+                    onClick={() => setScannerOpen(true)}
+                  />
+                </div>
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl bg-[#F7F1FA] p-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-secondary-500">
+                      {t("Participants")}
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-primary-900">
+                      {offer.participants_count || 0}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-[#FFF5E5] p-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#D59500]">
+                      {t("Pending")}
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-[#9B6400]">
+                      {pendingCount}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-[#F7F1FA] p-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-secondary-500">
+                      {t("ticket_checked_in_count")}
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-primary-900">
+                      {checkedInCount}
+                    </p>
+                  </div>
+                </div>
+                {scanError ? (
+                  <p className="mt-3 text-xs text-danger-600">{scanError}</p>
+                ) : null}
+                {scanResult?.ticket && scanResult?.user ? (
+                  <div className="mt-4 rounded-2xl border border-[#EADAF1] bg-[#F7F1FA] p-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-secondary-500">
+                      {t("ticket_scan_result")}
+                    </p>
+                    <div className="mt-3 flex items-center gap-3">
+                      <UserAvatar user={scanResult.user} size={44} withBorder />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-primary-900">
+                          {scanResult.user.name || ""}
+                        </p>
+                        <p className="text-xs text-secondary-500">
+                          {t("ticket_scan_status")}{" "}
+                          <span className="font-semibold text-primary-700">
+                            {scanResult.ticket.status}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-secondary-500">
+                      <span>
+                        {t("ticket_scan_count")}:{" "}
+                        <span className="font-semibold text-primary-700">
+                          {scanResult.ticket.scan_count}
+                        </span>
+                      </span>
+                      {scanResult.ticket.checked_in_at ? (
+                        <span>
+                          {t("ticket_scan_time")}:{" "}
+                          <span className="font-semibold text-primary-700">
+                            {new Date(
+                              scanResult.ticket.checked_in_at
+                            ).toLocaleString()}
+                          </span>
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="rounded-3xl border border-[#EADAF1] bg-white p-5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-primary-900">
+                    {t("ticket_checkins_title")}
+                  </h3>
+                  <span className="text-xs text-secondary-400">
+                    {checkedInCount}
+                  </span>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {checkedInError ? (
+                    <p className="text-sm text-danger-600">
+                      {checkedInError}
+                    </p>
+                  ) : checkedInEntries.length === 0 ? (
+                    <p className="text-sm text-secondary-400">
+                      {t("ticket_checkins_empty")}
+                    </p>
+                  ) : (
+                    checkedInEntries.map((entry) => (
+                      <div
+                        key={entry.id}
+                        className="flex items-center justify-between gap-3 rounded-2xl border border-[#EADAF1] bg-white p-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <UserAvatar user={entry.user} size={40} withBorder />
+                          <div>
+                            <p className="text-sm font-semibold text-primary-900">
+                              {entry.user?.name || ""}
+                            </p>
+                            <p className="text-xs text-secondary-500">
+                              {entry.checked_in_at
+                                ? new Date(entry.checked_in_at).toLocaleString()
+                                : ""}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-xs font-semibold text-primary-700">
+                          {t("ticket_checked_in_count")}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </>
+          ) : null}
         </section>
 
         <aside className="space-y-4">
@@ -643,89 +924,6 @@ export default function MyOfferDetailsPage() {
               />
               {actionError ? (
                 <p className="text-xs text-danger-600">{actionError}</p>
-              ) : null}
-            </div>
-            <div className="mt-6 rounded-2xl border border-[#EADAF1] bg-white p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-700">
-                  {t("ticket_scan_title")}
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  label={t("ticket_scan_camera")}
-                  className="px-3 py-1 text-xs"
-                  onClick={() => setScannerOpen(true)}
-                />
-              </div>
-              <p className="mt-2 text-xs text-secondary-500">
-                {t("ticket_scan_hint")}
-              </p>
-              <div className="mt-3 flex flex-col gap-2">
-                <input
-                  value={scanToken}
-                  onChange={(event) =>
-                    setScanToken(normalizeTicketToken(event.target.value))
-                  }
-                  onPaste={(event) => {
-                    event.preventDefault();
-                    const pasted = event.clipboardData.getData("text");
-                    const normalized = normalizeTicketToken(pasted);
-                    setScanToken(normalized);
-                  }}
-                  placeholder={t("ticket_scan_placeholder")}
-                  className="w-full rounded-2xl border border-[#EADAF1] px-3 py-2 text-xs text-secondary-600 outline-none focus:border-primary-500"
-                />
-                <Button
-                  label={t("ticket_scan_button")}
-                  size="sm"
-                  className="w-full"
-                  onClick={() => handleScanTicket()}
-                  loading={scanBusy}
-                  disabled={!scanToken.trim() || scanBusy}
-                />
-              </div>
-              {scanError ? (
-                <p className="mt-2 text-xs text-danger-600">{scanError}</p>
-              ) : null}
-              {scanResult?.ticket && scanResult?.user ? (
-                <div className="mt-3 rounded-2xl border border-[#EADAF1] bg-[#F7F1FA] p-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-secondary-500">
-                    {t("ticket_scan_result")}
-                  </p>
-                  <div className="mt-3 flex items-center gap-3">
-                    <UserAvatar user={scanResult.user} size={44} withBorder />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-primary-900">
-                        {scanResult.user.name || ""}
-                      </p>
-                      <p className="text-xs text-secondary-500">
-                        {t("ticket_scan_status")}{" "}
-                        <span className="font-semibold text-primary-700">
-                          {scanResult.ticket.status}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-secondary-500">
-                    <span>
-                      {t("ticket_scan_count")}:{" "}
-                      <span className="font-semibold text-primary-700">
-                        {scanResult.ticket.scan_count}
-                      </span>
-                    </span>
-                    {scanResult.ticket.checked_in_at ? (
-                      <span>
-                        {t("ticket_scan_time")}:{" "}
-                        <span className="font-semibold text-primary-700">
-                          {new Date(
-                            scanResult.ticket.checked_in_at
-                          ).toLocaleString()}
-                        </span>
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
               ) : null}
             </div>
           </div>
