@@ -46,6 +46,67 @@ export default function ProfileEditPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
+  const compressAvatarImage = async (file) => {
+    const maxDimension = 1024;
+    const maxSize = 500 * 1024;
+    if (!file || !file.type?.startsWith("image/")) return file;
+    if (file.size <= maxSize && file.type !== "image/png") {
+      return file;
+    }
+
+    const loadImage = async () => {
+      if (typeof createImageBitmap === "function") {
+        return createImageBitmap(file);
+      }
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(objectUrl);
+          resolve(img);
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(objectUrl);
+          reject();
+        };
+        img.src = objectUrl;
+      });
+    };
+
+    try {
+      const image = await loadImage();
+      const width = image.width || image.naturalWidth;
+      const height = image.height || image.naturalHeight;
+      const maxSide = Math.max(width, height);
+      const scale = maxSide > maxDimension ? maxDimension / maxSide : 1;
+      const targetWidth = Math.round(width * scale);
+      const targetHeight = Math.round(height * scale);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const context = canvas.getContext("2d");
+      if (!context) return file;
+
+      context.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+      const outputType =
+        file.type === "image/png" ? "image/png" : "image/jpeg";
+      const quality = outputType === "image/jpeg" ? 0.8 : undefined;
+
+      const blob = await new Promise((resolve) => {
+        canvas.toBlob(resolve, outputType, quality);
+      });
+
+      if (!blob) return file;
+      if (blob.size >= file.size && scale === 1) return file;
+
+      return new File([blob], file.name, { type: outputType });
+    } catch {
+      return file;
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
     const load = async () => {
@@ -159,7 +220,8 @@ export default function ProfileEditPage() {
     try {
       const token = getToken();
       const formData = new FormData();
-      formData.append("avatar", file);
+      const optimizedFile = await compressAvatarImage(file);
+      formData.append("avatar", optimizedFile);
 
       const response = await fetch(buildUrl("profile/avatar"), {
         method: "POST",
