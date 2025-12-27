@@ -527,6 +527,7 @@
   "ticket_checkins_title": "Participants presents",
   "ticket_checkins_empty": "Aucun participant n'est encore present.",
   "ticket_checkins_failed": "Impossible de charger les enregistrements.",
+  "ticket_present_badge": "Present",
   "ticket_scan_camera_hint": "Placez la camera devant le QR code.",
   "ticket_scan_camera": "Ouvrir la camera",
   "ticket_scan_hint": "Collez un code ticket pour valider un participant.",

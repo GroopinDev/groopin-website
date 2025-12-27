@@ -67,7 +67,16 @@ export default function LoginPage() {
     try {
       setSocialLoading(provider);
       setStatus("");
-      const response = await apiRequest(`auth/${provider}/redirect`, {
+      const redirectUrl =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/app/guest/social-callback`
+          : "";
+      const path = redirectUrl
+        ? `auth/${provider}/redirect?redirect_url=${encodeURIComponent(
+            redirectUrl
+          )}`
+        : `auth/${provider}/redirect`;
+      const response = await apiRequest(path, {
         method: "GET",
         auth: false
       });

@@ -76,6 +76,13 @@ export default function MyOfferDetailsPage() {
     ],
     [t]
   );
+  const checkedInUserIds = useMemo(() => {
+    return new Set(
+      checkedInEntries
+        .map((entry) => entry?.user?.id)
+        .filter((id) => Boolean(id))
+    );
+  }, [checkedInEntries]);
 
   const loadOffer = async () => {
     setStatus("loading");
@@ -698,9 +705,16 @@ export default function MyOfferDetailsPage() {
                         <div className="flex items-center gap-3">
                           <UserAvatar user={user} size={44} withBorder />
                           <div>
-                            <p className="text-sm font-semibold text-primary-900">
-                              {user.first_name} {user.last_name}
-                            </p>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="text-sm font-semibold text-primary-900">
+                                {user.first_name} {user.last_name}
+                              </p>
+                              {checkedInUserIds.has(user.id) ? (
+                                <span className="rounded-full bg-success-100 px-2 py-1 text-[10px] font-semibold text-success-700">
+                                  {t("ticket_present_badge")}
+                                </span>
+                              ) : null}
+                            </div>
                             <p className="text-xs text-secondary-400">
                               {getAge(user)
                                 ? t("years_old", { count: getAge(user) })
@@ -985,9 +999,16 @@ export default function MyOfferDetailsPage() {
                   <div className="flex items-center gap-3">
                     <UserAvatar user={user} size={44} withBorder />
                     <div>
-                      <p className="text-sm font-semibold text-primary-900">
-                        {user.first_name} {user.last_name}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-semibold text-primary-900">
+                          {user.first_name} {user.last_name}
+                        </p>
+                        {checkedInUserIds.has(user.id) ? (
+                          <span className="rounded-full bg-success-100 px-2 py-1 text-[10px] font-semibold text-success-700">
+                            {t("ticket_present_badge")}
+                          </span>
+                        ) : null}
+                      </div>
                       <p className="text-xs text-secondary-400">
                         {getAge(user)
                           ? t("years_old", { count: getAge(user) })

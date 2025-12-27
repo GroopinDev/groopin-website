@@ -537,6 +537,7 @@
   "ticket_checkins_title": "Checked-in participants",
   "ticket_checkins_empty": "No one has checked in yet.",
   "ticket_checkins_failed": "Unable to load check-ins.",
+  "ticket_present_badge": "Present",
   "starts_in_time": "Starts in: {{time}}",
   "terms and conditons": "Terms & conditons",
   "this offer": "this offer",
