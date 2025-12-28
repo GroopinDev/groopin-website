@@ -41,7 +41,7 @@ export default function CreateOfferPage() {
   });
 
   useEffect(() => {
-    apiRequest("parameters")
+    apiRequest("parameters", { cacheTime: 300000 })
       .then((payload) => {
         const dynamicGroups = payload?.dynamic_questions || {};
         setCategories(payload?.categories || []);

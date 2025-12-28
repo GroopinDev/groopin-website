@@ -59,7 +59,7 @@ export default function EditMyOfferPage() {
       setMessage("");
       try {
         const [paramsPayload, offerPayload] = await Promise.all([
-          apiRequest("parameters"),
+          apiRequest("parameters", { cacheTime: 300000 }),
           apiRequest(`my-offers/${params.id}`)
         ]);
         if (!isMounted) return;

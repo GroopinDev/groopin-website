@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 
 import OfferCard from "../../../../../components/offers/offer-card";
@@ -136,6 +136,7 @@ export default function TabsHomePage() {
   const [isFilterOpen, setFilterOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const user = getUser();
+  const latestOfferRequestRef = useRef(0);
 
   const [filters, setFilters] = useState({
     title: "",
@@ -162,7 +163,7 @@ export default function TabsHomePage() {
   );
 
   useEffect(() => {
-    apiRequest("parameters")
+    apiRequest("parameters", { cacheTime: 300000 })
       .then((payload) => {
         setCategories(payload?.categories || []);
         setCities(payload?.cities || []);
@@ -190,10 +191,15 @@ export default function TabsHomePage() {
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      setFilters((prev) => ({
-        ...prev,
-        title: searchValue ? searchValue.trim() : ""
-      }));
+      const trimmed = searchValue.trim();
+      setFilters((prev) => {
+        const nextTitle = trimmed ? trimmed : "";
+        if (prev.title === nextTitle) return prev;
+        return {
+          ...prev,
+          title: nextTitle
+        };
+      });
     }, 300);
 
     return () => clearTimeout(timeout);
@@ -203,13 +209,16 @@ export default function TabsHomePage() {
     setStatus("loading");
     const query = buildFilterParams(filters);
     const endpoint = query ? `offers?${query}` : "offers";
-    apiRequest(endpoint)
+    const requestId = (latestOfferRequestRef.current += 1);
+    apiRequest(endpoint, { cacheTime: 15000 })
       .then((payload) => {
+        if (requestId !== latestOfferRequestRef.current) return;
         setOffers(payload?.data || []);
         setStatus("ready");
         setError("");
       })
       .catch((err) => {
+        if (requestId !== latestOfferRequestRef.current) return;
         setError(err?.message || t("general.error_has_occurred"));
         setStatus("error");
       });

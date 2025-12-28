@@ -17,7 +17,7 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     let isMounted = true;
-    apiRequest("parameters")
+    apiRequest("parameters", { cacheTime: 300000 })
       .then((payload) => {
         if (!isMounted) return;
         const items = payload?.onboarding_screens || [];

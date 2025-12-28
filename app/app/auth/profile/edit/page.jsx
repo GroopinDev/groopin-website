@@ -113,7 +113,7 @@ export default function ProfileEditPage() {
       try {
         const [userPayload, paramsPayload] = await Promise.all([
           apiRequest("user"),
-          apiRequest("parameters")
+          apiRequest("parameters", { cacheTime: 300000 })
         ]);
         if (!isMounted) return;
         const loadedUser = userPayload?.data || userPayload;

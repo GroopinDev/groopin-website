@@ -44,17 +44,39 @@ export default function ConversationPage() {
   const currentUser = getUser();
   const bottomRef = useRef(null);
   const firstScrollRef = useRef(true);
+  const messagesRef = useRef([]);
+  const lastRemoteSignatureRef = useRef("");
+  const lastConversationStampRef = useRef("");
   const dateLocale =
     locale === "fr" ? "fr-FR" : locale === "ar" ? "ar-MA" : "en-US";
+
+  const buildMessageSignature = (items) => {
+    if (!items || items.length === 0) return "empty";
+    const first = items[0];
+    const last = items[items.length - 1];
+    return `${items.length}:${first?.id || ""}:${last?.id || ""}:${
+      last?.created_at || ""
+    }`;
+  };
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   const fetchMessages = async () => {
     setStatus("loading");
     try {
       const payload = await apiRequest(
-        `conversations/${params.id}/messages`
+        `conversations/${params.id}/messages`,
+        { cache: false }
       );
-      setMessages(payload?.data || []);
-      setConversation(payload?.meta?.conversation || null);
+      const remoteMessages = payload?.data || [];
+      const conversationData = payload?.meta?.conversation || null;
+      lastRemoteSignatureRef.current = buildMessageSignature(remoteMessages);
+      lastConversationStampRef.current =
+        conversationData?.last_message_at || "";
+      setMessages(remoteMessages);
+      setConversation(conversationData);
       setError("");
       setStatus("ready");
     } catch (err) {
@@ -66,10 +88,33 @@ export default function ConversationPage() {
   const refreshMessages = async () => {
     try {
       const payload = await apiRequest(
-        `conversations/${params.id}/messages`
+        `conversations/${params.id}/messages`,
+        { cache: false }
       );
       const remoteMessages = payload?.data || [];
-      setConversation(payload?.meta?.conversation || null);
+      const conversationData = payload?.meta?.conversation || null;
+      const remoteSignature = buildMessageSignature(remoteMessages);
+      const conversationStamp = conversationData?.last_message_at || "";
+      const hasTempMessages = messagesRef.current.some(
+        (message) => message?.isTemp
+      );
+
+      if (
+        !hasTempMessages &&
+        remoteSignature === lastRemoteSignatureRef.current
+      ) {
+        if (
+          conversationStamp &&
+          conversationStamp !== lastConversationStampRef.current
+        ) {
+          setConversation(conversationData);
+          lastConversationStampRef.current = conversationStamp;
+        }
+        setStatus((prev) => (prev === "error" ? "ready" : prev));
+        return;
+      }
+
+      setConversation(conversationData);
       setMessages((prev) => {
         const tempMessages = prev.filter((message) => message?.isTemp);
         if (!tempMessages.length) return remoteMessages;
@@ -85,6 +130,8 @@ export default function ConversationPage() {
         });
         return [...remoteMessages, ...filteredTemps];
       });
+      lastRemoteSignatureRef.current = remoteSignature;
+      lastConversationStampRef.current = conversationStamp;
       setError("");
       setStatus((prev) => (prev === "error" ? "ready" : prev));
     } catch {
