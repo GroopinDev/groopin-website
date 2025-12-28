@@ -147,7 +147,13 @@ export default function OfferCard({ offer, currentUserId }) {
     if (participantStatus) return "bg-secondary-500 text-white";
     return "bg-secondary-500 text-white";
   })();
-  const isActiveStatus = statusLabel === t("Actives");
+  const isActiveStatus =
+    (!isClosed &&
+      !offer?.is_draft &&
+      offer?.status === "active" &&
+      !pendingStatus &&
+      !participantStatus) ||
+    statusLabel === t("Actives");
   const isRequestDisabled =
     isOwner || isParticipant || isPending || isClosed || actionState !== "idle";
   const showActionButton = !isOwner && !isParticipant && !isPending && !isClosed;
