@@ -301,6 +301,10 @@ export default function OfferDetailsPage() {
       !offer.is_draft &&
       !offer.is_closed
   );
+  const headerDateLocale =
+    locale === "fr" ? "fr-FR" : locale === "ar" ? "ar-MA" : "en-GB";
+  const scanDateLocale =
+    locale === "fr" ? "fr-FR" : locale === "ar" ? "ar-MA" : "en-GB";
   const ownerRating = Number(offer?.owner?.average_rating ?? offer?.owner?.rating ?? null);
   const showOwnerRating = Number.isFinite(ownerRating) && ownerRating > 0;
   const isActionDisabled = isOwner || isParticipant || isPending || isClosed;
@@ -354,10 +358,6 @@ export default function OfferDetailsPage() {
   const cardBase = "rounded-3xl border border-[#EADAF1] bg-white p-5";
   const sectionTitle =
     "text-sm font-semibold uppercase tracking-[0.2em] text-primary-700";
-  const headerDateLocale =
-    locale === "fr" ? "fr-FR" : locale === "ar" ? "ar-MA" : "en-GB";
-  const scanDateLocale =
-    locale === "fr" ? "fr-FR" : locale === "ar" ? "ar-MA" : "en-GB";
   const formatShortToken = (date, formatLocale, options) => {
     const value = new Intl.DateTimeFormat(formatLocale, options).format(date);
     const normalized = value.replace(/\./g, "").trim().slice(0, 3);
@@ -380,7 +380,7 @@ export default function OfferDetailsPage() {
     }).format(date);
     return `${weekday} ${dayNumber} ${month} ${year}`;
   };
-  const formatCheckedAt = (value) => {
+  function formatCheckedAt(value) {
     if (!value) return "-";
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
@@ -391,7 +391,7 @@ export default function OfferDetailsPage() {
       hour: "2-digit",
       minute: "2-digit"
     });
-  };
+  }
   const userStatusLabel = isOwner
     ? t("Organizer")
     : isParticipant

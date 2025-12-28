@@ -534,7 +534,7 @@
   "ticket_scan_status": "Statut",
   "ticket_scan_result": "Resultat du scan",
   "ticket_checked_in_count": "Presents",
-  "ticket_checked_at": "Scanné à {{time}}",
+  "ticket_checked_at": "Scanné le {{time}}",
   "ticket_checkins_title": "Participants presents",
   "ticket_checkins_empty": "Aucun participant n'est encore present.",
   "ticket_checkins_failed": "Impossible de charger les enregistrements.",
