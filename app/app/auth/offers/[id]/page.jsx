@@ -381,7 +381,7 @@ export default function OfferDetailsPage() {
         ? t("Pending")
         : isClosed
           ? t("closed")
-          : t("In Progress");
+          : "";
   const stats = [
     { label: t("Favorites"), value: favoriteCount || 0 },
     { label: t("offer_status_label"), value: statusLabel }
@@ -839,9 +839,11 @@ export default function OfferDetailsPage() {
             <div className={cardBase}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className={sectionTitle}>{t("request_status_title")}</h2>
-                <span className="rounded-full border border-secondary-500/40 bg-white px-3 py-1 text-xs font-semibold text-secondary-500">
-                  {userStatusLabel}
-                </span>
+                {userStatusLabel ? (
+                  <span className="rounded-full border border-secondary-500/40 bg-white px-3 py-1 text-xs font-semibold text-secondary-500">
+                    {userStatusLabel}
+                  </span>
+                ) : null}
               </div>
               <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                 {showRequestButton ? (

@@ -511,7 +511,7 @@ export default function MyOfferDetailsPage() {
       const gainNode = context.createGain();
       oscillator.type = "sine";
       oscillator.frequency.value = isValid ? 880 : 220;
-      gainNode.gain.value = 0.12;
+      gainNode.gain.value = 0.3;
       oscillator.connect(gainNode);
       gainNode.connect(context.destination);
       oscillator.start();
