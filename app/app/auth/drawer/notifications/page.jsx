@@ -351,7 +351,7 @@ export default function NotificationsPage() {
           className="text-xs font-semibold text-secondary-600"
           disabled={isMarkingAll}
         >
-          {isMarkingAll ? t("Loading more...") : "Mark all as read"}
+          {isMarkingAll ? t("Loading more...") : t("mark_all_as_read")}
         </button>
       </div>
 

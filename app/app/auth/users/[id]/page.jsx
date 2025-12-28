@@ -167,6 +167,23 @@ export default function UserProfilePage() {
       String(value).trim() !== ""
   );
   const hasExtraInfo = extraInfoBlocks.length > 0 || extraInfoExtras.length > 0;
+  const birthdayLocale =
+    locale === "fr" ? "fr-FR" : locale === "ar" ? "ar-MA" : "en-GB";
+  const formatBirthday = (value) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    const day = new Intl.DateTimeFormat(birthdayLocale, {
+      day: "2-digit"
+    }).format(date);
+    const month = new Intl.DateTimeFormat(birthdayLocale, {
+      month: "short"
+    }).format(date);
+    const year = new Intl.DateTimeFormat(birthdayLocale, {
+      year: "numeric"
+    }).format(date);
+    return `${day} ${month} ${year}`;
+  };
 
   const stats = [
     { label: t("profile.member_since"), value: memberSinceLabel },
@@ -293,7 +310,9 @@ export default function UserProfilePage() {
                       </p>
                     </div>
                     <p className="mt-2 text-sm font-semibold text-primary-900">
-                      {String(item.value)}
+                      {item.key === "date_of_birth"
+                        ? formatBirthday(item.value)
+                        : String(item.value)}
                     </p>
                   </div>
                 ))}

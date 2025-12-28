@@ -782,7 +782,12 @@ export default function MyOfferDetailsPage() {
         loadCheckins();
       }
     } catch (error) {
-      setScanError(error?.message || t("ticket_scan_failed"));
+      const hasValidationErrors = Boolean(error?.data?.errors);
+      setScanError(
+        hasValidationErrors
+          ? t("ticket_scan_failed")
+          : error?.message || t("ticket_scan_failed")
+      );
       setScanResultOpen(true);
       playScanTone(false);
     } finally {
@@ -1182,7 +1187,7 @@ export default function MyOfferDetailsPage() {
 
           <div className="rounded-3xl border border-[#EADAF1] bg-white p-5">
             <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-primary-700">
-              Owner actions
+              {t("Actions")}
             </h3>
             <div className="mt-5 space-y-4">
               <Button

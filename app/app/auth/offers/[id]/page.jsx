@@ -704,7 +704,12 @@ export default function OfferDetailsPage() {
       });
       setScanResult(payload || null);
     } catch (error) {
-      setScanError(error?.message || t("ticket_scan_failed"));
+      const hasValidationErrors = Boolean(error?.data?.errors);
+      setScanError(
+        hasValidationErrors
+          ? t("ticket_scan_failed")
+          : error?.message || t("ticket_scan_failed")
+      );
     } finally {
       setScanBusy(false);
     }
@@ -1414,17 +1419,34 @@ export default function OfferDetailsPage() {
         </div>
       </Modal>
 
-      <ConfirmModal
+      <Modal
         open={isCancelModalOpen}
         title={t("Cancel request")}
-        description={t("Are you sure you want to cancel your request?")}
-        confirmLabel={t("yes_cancel")}
-        confirmVariant="destructive"
-        loading={actionState === "cancel"}
-        error={isCancelModalOpen ? actionError : ""}
-        onConfirm={handleCancelRequest}
         onClose={() => setCancelModalOpen(false)}
-      />
+      >
+        <p className="text-sm text-secondary-500">
+          {t("Are you sure you want to cancel your request?")}
+        </p>
+        {isCancelModalOpen && actionError ? (
+          <p className="mt-3 text-xs text-danger-600">{actionError}</p>
+        ) : null}
+        <div className="mt-5 flex flex-col gap-3">
+          <Button
+            variant="destructive"
+            label={t("yes_cancel")}
+            className="w-full"
+            onClick={handleCancelRequest}
+            loading={actionState === "cancel"}
+          />
+          <Button
+            variant="outline"
+            label={t("Close")}
+            className="w-full"
+            onClick={() => setCancelModalOpen(false)}
+            disabled={actionState === "cancel"}
+          />
+        </div>
+      </Modal>
 
       <ConfirmModal
         open={isRemoveModalOpen}

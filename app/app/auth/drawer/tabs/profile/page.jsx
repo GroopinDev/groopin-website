@@ -11,7 +11,7 @@ import { apiRequest } from "../../../../../lib/api-client";
 import { getUser } from "../../../../../lib/session";
 
 export default function ProfilePage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [createdOffers, setCreatedOffers] = useState([]);
   const [participatedOffers, setParticipatedOffers] = useState([]);
   const [status, setStatus] = useState("loading");
@@ -77,6 +77,23 @@ export default function ProfilePage() {
     { label: t("profile.participated"), value: participatedCount },
     { label: t("profile.complete_profile"), value: `${profileCompletion}%` }
   ];
+  const birthdayLocale =
+    locale === "fr" ? "fr-FR" : locale === "ar" ? "ar-MA" : "en-GB";
+  const formatBirthday = (value) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    const day = new Intl.DateTimeFormat(birthdayLocale, {
+      day: "2-digit"
+    }).format(date);
+    const month = new Intl.DateTimeFormat(birthdayLocale, {
+      month: "short"
+    }).format(date);
+    const year = new Intl.DateTimeFormat(birthdayLocale, {
+      year: "numeric"
+    }).format(date);
+    return `${day} ${month} ${year}`;
+  };
 
   useEffect(() => {
     Promise.all([
@@ -190,11 +207,13 @@ export default function ProfilePage() {
                       {item.label}
                     </p>
                   </div>
-                  <p className="mt-2 text-sm font-semibold text-primary-900">
-                    {String(item.value)}
-                  </p>
-                </div>
-              ))}
+                    <p className="mt-2 text-sm font-semibold text-primary-900">
+                      {item.key === "date_of_birth"
+                        ? formatBirthday(item.value)
+                        : String(item.value)}
+                    </p>
+                  </div>
+                ))}
               {extraInfoExtras.length > 0 ? (
                 <div className="rounded-2xl border border-[#EADAF1] bg-[#F7F1FA] px-4 py-3">
                   <div className="flex items-center gap-2">
