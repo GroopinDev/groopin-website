@@ -544,6 +544,7 @@
   "ticket_scan_count": "Scans",
   "ticket_scan_time": "Checked in",
   "ticket_checked_in_count": "Checked in",
+  "ticket_checked_at": "Checked at {{time}}",
   "ticket_checkins_title": "Checked-in participants",
   "ticket_checkins_empty": "No one has checked in yet.",
   "ticket_checkins_failed": "Unable to load check-ins.",

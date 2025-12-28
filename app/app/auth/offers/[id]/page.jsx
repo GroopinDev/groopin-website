@@ -336,6 +336,11 @@ export default function OfferDetailsPage() {
   const canOpenChat = Boolean(conversationId) && (isOwner || isParticipant);
   const canShowTicket = isParticipant && !isOwner;
   const ticketToken = ticket?.token || "";
+  const ticketStatusLabel = ticket?.checked_in_at
+    ? t("ticket_checked_at", {
+        time: formatCheckedAt(ticket.checked_in_at)
+      })
+    : ticket?.status || t("Participating");
 
   const getAge = (user) => {
     if (typeof user?.age === "number") return user.age;
@@ -350,6 +355,8 @@ export default function OfferDetailsPage() {
   const sectionTitle =
     "text-sm font-semibold uppercase tracking-[0.2em] text-primary-700";
   const headerDateLocale =
+    locale === "fr" ? "fr-FR" : locale === "ar" ? "ar-MA" : "en-GB";
+  const scanDateLocale =
     locale === "fr" ? "fr-FR" : locale === "ar" ? "ar-MA" : "en-GB";
   const formatShortToken = (date, formatLocale, options) => {
     const value = new Intl.DateTimeFormat(formatLocale, options).format(date);
@@ -372,6 +379,18 @@ export default function OfferDetailsPage() {
       year: "numeric"
     }).format(date);
     return `${weekday} ${dayNumber} ${month} ${year}`;
+  };
+  const formatCheckedAt = (value) => {
+    if (!value) return "-";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString(scanDateLocale, {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
   };
   const userStatusLabel = isOwner
     ? t("Organizer")
@@ -924,7 +943,7 @@ export default function OfferDetailsPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className={sectionTitle}>{t("ticket_title")}</h2>
                 <span className="rounded-full bg-primary-600/10 px-3 py-1 text-xs font-semibold text-primary-900">
-                  {ticket?.status || t("Participating")}
+                  {ticketStatusLabel}
                 </span>
               </div>
               <p className="mt-3 text-sm text-secondary-500">
