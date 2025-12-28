@@ -161,10 +161,19 @@ const resolveNotificationRoute = (notification) => {
     [
       "participation_request_accepted",
       "participation_request_rejected",
-      "App\Notifications\Offer\ParticipationLeaveReviewTripNotification"
+      "App\\Notifications\\Offer\\ParticipationLeaveReviewTripNotification"
     ].includes(notification.type)
   ) {
     return offerId ? `/app/auth/profile/offer-rating/${offerId}` : "";
+  }
+
+  if (
+    [
+      "participation_offerremoved",
+      "App\\Notifications\\Offer\\OfferRemovedNotification"
+    ].includes(notification.type)
+  ) {
+    return "/app/auth/participating";
   }
 
   if (offerId) {
@@ -203,9 +212,8 @@ export default function NotificationsPage() {
       const count =
         typeof metaCount === "number" ? metaCount : computed;
       setUnreadTotal(count);
-      broadcastUnreadCount(count);
     },
-    [broadcastUnreadCount]
+    []
   );
 
   const updateUnreadDelta = useCallback(
@@ -214,11 +222,10 @@ export default function NotificationsPage() {
         const computed = items.filter((item) => !item?.read_at).length;
         const next =
           typeof prev === "number" ? Math.max(prev + delta, 0) : computed;
-        broadcastUnreadCount(next);
         return next;
       });
     },
-    [broadcastUnreadCount]
+    []
   );
 
   const loadNotifications = useCallback(
@@ -262,6 +269,12 @@ export default function NotificationsPage() {
   useEffect(() => {
     loadNotifications();
   }, [loadNotifications]);
+
+  useEffect(() => {
+    if (typeof unreadTotal === "number") {
+      broadcastUnreadCount(unreadTotal);
+    }
+  }, [broadcastUnreadCount, unreadTotal]);
 
   const markAsRead = async (notificationId) => {
     try {
