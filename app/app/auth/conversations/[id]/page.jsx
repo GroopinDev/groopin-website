@@ -213,7 +213,7 @@ export default function ConversationPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-12rem)] flex-col gap-4 overflow-hidden">
+    <div className="flex h-[calc(100dvh-12rem)] flex-col gap-4 overflow-hidden">
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -343,7 +343,7 @@ export default function ConversationPage() {
           value={content}
           onChange={(event) => setContent(event.target.value)}
           placeholder={t("Type a message")}
-          className="w-full bg-transparent px-2 py-2 text-sm text-secondary-600 outline-none"
+          className="w-full bg-transparent px-2 py-2 text-base text-secondary-600 outline-none"
         />
         <button
           type="submit"
