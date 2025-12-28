@@ -79,6 +79,8 @@ export default function MyOfferDetailsPage() {
   const scanBusyRef = useRef(false);
   const scanResultOpenRef = useRef(false);
   const lastScanRef = useRef({ token: "", time: 0 });
+  const audioContextRef = useRef(null);
+  const audioUnlockedRef = useRef(false);
   const shareUrl = useMemo(() => {
     if (typeof window === "undefined" || !offer?.id) return "";
     return `${window.location.origin}/app/auth/offers/${offer.id}`;
@@ -264,6 +266,15 @@ export default function MyOfferDetailsPage() {
   useEffect(() => {
     scanResultOpenRef.current = isScanResultOpen;
   }, [isScanResultOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+    };
+  }, []);
 
 
   useEffect(() => {
@@ -501,12 +512,43 @@ export default function MyOfferDetailsPage() {
     return true;
   };
 
+  const unlockAudioContext = async () => {
+    if (typeof window === "undefined") return;
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContext();
+    }
+    const context = audioContextRef.current;
+    if (context.state === "suspended") {
+      try {
+        await context.resume();
+      } catch {
+        return;
+      }
+    }
+    if (!audioUnlockedRef.current) {
+      const oscillator = context.createOscillator();
+      const gainNode = context.createGain();
+      gainNode.gain.value = 0;
+      oscillator.connect(gainNode);
+      gainNode.connect(context.destination);
+      oscillator.start();
+      oscillator.stop(context.currentTime + 0.01);
+      audioUnlockedRef.current = true;
+    }
+  };
+
   const playScanTone = (isValid) => {
     if (typeof window === "undefined") return;
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (!AudioContext) return;
-      const context = new AudioContext();
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioContext();
+      }
+      const context = audioContextRef.current;
+      if (context.state === "suspended") return;
       const oscillator = context.createOscillator();
       const gainNode = context.createGain();
       oscillator.type = "sine";
@@ -516,7 +558,6 @@ export default function MyOfferDetailsPage() {
       gainNode.connect(context.destination);
       oscillator.start();
       oscillator.stop(context.currentTime + 0.2);
-      oscillator.onended = () => context.close();
     } catch {
       // Ignore audio errors (autoplay policies, etc.).
     }
@@ -801,6 +842,11 @@ export default function MyOfferDetailsPage() {
     setScanError("");
   };
 
+  const handleOpenScanner = () => {
+    unlockAudioContext();
+    setScannerOpen(true);
+  };
+
   const scanValidity = resolveScanValidity(scanResult, scanError);
   const scanToneClass =
     scanValidity === false
@@ -1038,13 +1084,13 @@ export default function MyOfferDetailsPage() {
                       {t("ticket_scan_hint")}
                     </p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    label={t("ticket_scan_camera")}
-                    className="px-4 py-2 text-xs"
-                    onClick={() => setScannerOpen(true)}
-                  />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      label={t("ticket_scan_camera")}
+                      className="px-4 py-2 text-xs"
+                      onClick={handleOpenScanner}
+                    />
                 </div>
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
                   <div className="rounded-2xl bg-secondary-500/10 p-3">

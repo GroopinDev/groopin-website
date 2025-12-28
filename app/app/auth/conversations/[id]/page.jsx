@@ -348,7 +348,7 @@ export default function ConversationPage() {
         <button
           type="submit"
           disabled={sendState === "sending" || content.trim().length === 0}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary-600 text-white transition hover:bg-secondary-500 disabled:cursor-not-allowed disabled:bg-secondary-400"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-primary-500 via-[#822485] to-secondary-500 text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           aria-label={t("Submit")}
         >
           {sendState === "sending" ? (
