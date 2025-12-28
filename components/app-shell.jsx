@@ -17,6 +17,10 @@ import UserAvatar from "./user/user-avatar";
 import { useI18n } from "./i18n-provider";
 import { apiRequest } from "../app/lib/api-client";
 import { clearSession, getToken, getUser, setSession } from "../app/lib/session";
+import {
+  ensureWebPushSubscription,
+  removeWebPushSubscription
+} from "../app/lib/web-push";
 
 export default function AppShell({ children }) {
   const router = useRouter();
@@ -26,6 +30,7 @@ export default function AppShell({ children }) {
   const [user, setUser] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadGroopsCount, setUnreadGroopsCount] = useState(0);
+  const [webPushReady, setWebPushReady] = useState(false);
 
   const menuItems = [
     { label: t("Favorites"), href: "/app/auth/favorites" },
@@ -145,6 +150,14 @@ export default function AppShell({ children }) {
   }, [pathname, refreshGroopsCount]);
 
   useEffect(() => {
+    if (!user || webPushReady) {
+      return;
+    }
+    setWebPushReady(true);
+    ensureWebPushSubscription().catch(() => {});
+  }, [user, webPushReady]);
+
+  useEffect(() => {
     const handleNotificationsUpdate = (event) => {
       const detailCount = event?.detail?.unreadCount;
       if (typeof detailCount === "number") {
@@ -163,6 +176,11 @@ export default function AppShell({ children }) {
   }, [refreshNotificationsCount]);
 
   const handleLogout = async () => {
+    try {
+      await removeWebPushSubscription();
+    } catch {
+      // ignore
+    }
     try {
       await apiRequest("logout", { method: "POST" });
     } catch {
