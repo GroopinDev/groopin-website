@@ -7,6 +7,7 @@ import UserAvatar from "../../../../../components/user/user-avatar";
 import Button from "../../../../../components/ui/button";
 import Input from "../../../../../components/ui/input";
 import RadioGroup from "../../../../../components/ui/radio-group";
+import { useI18n } from "../../../../../components/i18n-provider";
 import { apiRequest } from "../../../../lib/api-client";
 import { getToken, getUser, setSession } from "../../../../lib/session";
 
@@ -28,6 +29,7 @@ const normalizeFieldError = (errors, field) => {
 };
 
 export default function ProfileEditPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const fileInputRef = useRef(null);
   const [user, setUser] = useState(() => getUser());
@@ -138,9 +140,7 @@ export default function ProfileEditPage() {
       } catch (error) {
         if (!isMounted) return;
         setStatus("error");
-        setMessage(
-          error?.message || "Unable to load profile data. Try again."
-        );
+        setMessage(error?.message || t("profile.load_error"));
       }
     };
 
@@ -201,7 +201,7 @@ export default function ProfileEditPage() {
       setMessage(
         error?.data?.message ||
           error?.message ||
-          "Unable to update profile. Try again."
+          t("profile.update_error")
       );
       setFieldErrors(error?.data?.errors || {});
     } finally {
@@ -241,7 +241,7 @@ export default function ProfileEditPage() {
       }
 
       if (!response.ok) {
-        throw new Error(payload?.message || "Unable to upload avatar.");
+        throw new Error(payload?.message || t("profile.upload_error"));
       }
 
       const updatedUser = payload?.data || payload;
@@ -251,7 +251,7 @@ export default function ProfileEditPage() {
       }
       setUser(updatedUser);
     } catch (error) {
-      setMessage(error?.message || "Unable to upload avatar.");
+      setMessage(error?.message || t("profile.upload_error"));
     } finally {
       setIsUploading(false);
       event.target.value = "";
@@ -275,9 +275,11 @@ export default function ProfileEditPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-primary-800">Edit profile</h1>
+        <h1 className="text-2xl font-semibold text-primary-800">
+          {t("profile.edit_profile")}
+        </h1>
         <p className="text-sm text-secondary-400">
-          Update your personal details and preferences.
+          {t("profile.edit_profile_information")}
         </p>
       </div>
 
@@ -294,7 +296,9 @@ export default function ProfileEditPage() {
           variant="outline"
           size="sm"
           className="px-6"
-          label={isUploading ? "Uploading..." : "Change photo"}
+          label={
+            isUploading ? t("profile.uploading") : t("profile.change_photo")
+          }
           onClick={() => fileInputRef.current?.click()}
           disabled={isUploading}
         />
@@ -302,12 +306,12 @@ export default function ProfileEditPage() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <p className="mb-2 text-neutral-700">Sex</p>
+          <p className="mb-2 text-neutral-700">{t("Sex")}</p>
           <RadioGroup
             name="sex"
             options={[
-              { label: "Male", value: "male" },
-              { label: "Female", value: "female" }
+              { label: t("male"), value: "male" },
+              { label: t("female"), value: "female" }
             ]}
             value={formValues.sex}
             onChange={(value) => updateField("sex", value)}
@@ -321,7 +325,7 @@ export default function ProfileEditPage() {
 
         <Input
           name="first_name"
-          label="First name"
+          label={t("First Name")}
           value={formValues.first_name}
           onChange={(event) => updateField("first_name", event.target.value)}
           error={normalizeFieldError(fieldErrors, "first_name")}
@@ -329,7 +333,7 @@ export default function ProfileEditPage() {
         />
         <Input
           name="last_name"
-          label="Last name"
+          label={t("Last Name")}
           value={formValues.last_name}
           onChange={(event) => updateField("last_name", event.target.value)}
           error={normalizeFieldError(fieldErrors, "last_name")}
@@ -337,7 +341,7 @@ export default function ProfileEditPage() {
         />
         <Input
           name="date_of_birth"
-          label="Date of birth"
+          label={t("date_of_birth")}
           type="date"
           value={formValues.date_of_birth || ""}
           onChange={(event) => updateField("date_of_birth", event.target.value)}
@@ -347,7 +351,7 @@ export default function ProfileEditPage() {
         {dynamicQuestions.length > 0 ? (
           <div className="space-y-4">
             <p className="text-sm font-semibold text-primary-800">
-              Extra information
+              {t("profile.extra_information")}
             </p>
             {dynamicQuestions.map((question) => {
               const questionValue =
@@ -386,7 +390,7 @@ export default function ProfileEditPage() {
                         error ? "border-danger-600" : "border-[#EADAF1]"
                       }`}
                     >
-                      <option value="">Select</option>
+                      <option value="">{t("Select")}</option>
                       {(question.formatted_settings?.options || []).map(
                         (option) => (
                           <option key={option.value} value={option.value}>
@@ -423,7 +427,9 @@ export default function ProfileEditPage() {
         ) : null}
 
         <div className="space-y-1">
-          <label className="mb-1 block text-lg text-primary-500">Bio</label>
+          <label className="mb-1 block text-lg text-primary-500">
+            {t("bio")}
+          </label>
           <textarea
             rows={4}
             value={formValues.bio || ""}
@@ -433,7 +439,7 @@ export default function ProfileEditPage() {
                 ? "border-danger-600"
                 : "border-[#EADAF1]"
             }`}
-            placeholder="Tell people more about you."
+            placeholder={t("profile.bio_placeholder")}
           />
           {normalizeFieldError(fieldErrors, "bio") ? (
             <p className="mt-2 text-sm text-danger-600">
@@ -448,13 +454,15 @@ export default function ProfileEditPage() {
           <Button
             type="button"
             variant="outline"
-            label="Cancel"
+            label={t("Cancel")}
             className="w-full"
             onClick={() => router.back()}
           />
           <Button
             type="submit"
-            label={isSaving ? "Saving..." : "Save changes"}
+            label={
+              isSaving ? t("profile.saving") : t("profile.save_changes")
+            }
             className="w-full"
             disabled={isSaving}
           />

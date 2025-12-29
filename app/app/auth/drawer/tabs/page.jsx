@@ -249,6 +249,22 @@ export default function TabsHomePage() {
     });
   };
 
+  const addMultiFilter = (key, value) => {
+    setLocalFilters((prev) => {
+      const current = Array.isArray(prev[key]) ? prev[key] : [];
+      if (current.includes(value)) return prev;
+      return { ...prev, [key]: [...current, value] };
+    });
+  };
+
+  const removeMultiFilter = (key, value) => {
+    setLocalFilters((prev) => {
+      const current = Array.isArray(prev[key]) ? prev[key] : [];
+      const next = current.filter((item) => item !== value);
+      return { ...prev, [key]: next.length ? next : null };
+    });
+  };
+
   const updateDateRange = (index, value) => {
     setLocalFilters((prev) => {
       const current = prev.start_date_between || [null, null];
@@ -289,12 +305,19 @@ export default function TabsHomePage() {
     setLocalFilters((prev) => ({ ...prev, category: nextCategory }));
   };
 
-  const renderChip = (key, label, isActive, onClick, iconName = null) => (
+  const renderChip = (
+    key,
+    label,
+    isActive,
+    onClick,
+    iconName = null,
+    className = ""
+  ) => (
     <button
       key={key}
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-normal transition ${
+      className={`flex items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-normal transition ${className} ${
         isActive
           ? "border-secondary-500 bg-secondary-500 text-white"
           : "border-[#A564C2] bg-white text-secondary-400"
@@ -310,6 +333,14 @@ export default function TabsHomePage() {
       {label}
     </button>
   );
+
+  const filterChipClassName =
+    "min-h-[40px] rounded-2xl px-3 py-2 font-semibold";
+  const interestLabelByValue = useMemo(() => {
+    return new Map(
+      interests.map((interest) => [String(interest.value), interest.label])
+    );
+  }, [interests]);
 
   return (
     <div className="space-y-4">
@@ -413,17 +444,29 @@ export default function TabsHomePage() {
               {t("Sex")}
             </p>
             <div className="flex flex-wrap gap-2">
-              {renderChip("sex-all", t("All"), !localFilters.sex, () =>
-                setLocalFilters((prev) => ({ ...prev, sex: null }))
+              {renderChip(
+                "sex-all",
+                t("All"),
+                !localFilters.sex,
+                () => setLocalFilters((prev) => ({ ...prev, sex: null })),
+                null,
+                filterChipClassName
               )}
-              {renderChip("sex-male", t("male"), localFilters.sex === "male", () =>
-                setLocalFilters((prev) => ({ ...prev, sex: "male" }))
+              {renderChip(
+                "sex-male",
+                t("male"),
+                localFilters.sex === "male",
+                () => setLocalFilters((prev) => ({ ...prev, sex: "male" })),
+                null,
+                filterChipClassName
               )}
               {renderChip(
                 "sex-female",
                 t("female"),
                 localFilters.sex === "female",
-                () => setLocalFilters((prev) => ({ ...prev, sex: "female" }))
+                () => setLocalFilters((prev) => ({ ...prev, sex: "female" })),
+                null,
+                filterChipClassName
               )}
             </div>
           </div>
@@ -441,7 +484,7 @@ export default function TabsHomePage() {
                   city: value ? [Number(value)] : null
                 }));
               }}
-              className="w-full rounded-2xl border border-[#EADAF1] px-3 py-2 text-sm text-secondary-600"
+              className="min-h-[40px] w-full rounded-2xl border border-[#EADAF1] px-3 py-2 text-sm text-secondary-600"
             >
               <option value="">{t("All")}</option>
               {cities.map((city) => (
@@ -543,6 +586,29 @@ export default function TabsHomePage() {
           </div>
 
           <div className="space-y-3 border-b border-[#EADAF1] pb-4">
+            <div className="grid grid-cols-2 gap-3">
+              <label className="space-y-1 text-sm font-semibold text-primary-900">
+                <span>{t("Start date")}</span>
+                <input
+                  type="date"
+                  value={localFilters.start_date_between?.[0] ?? ""}
+                  onChange={(event) => updateDateRange(0, event.target.value)}
+                  className="w-full rounded-2xl border border-[#EADAF1] px-3 py-2 text-sm text-secondary-600"
+                />
+              </label>
+              <label className="space-y-1 text-sm font-semibold text-primary-900">
+                <span>{t("End date")}</span>
+                <input
+                  type="date"
+                  value={localFilters.start_date_between?.[1] ?? ""}
+                  onChange={(event) => updateDateRange(1, event.target.value)}
+                  className="w-full rounded-2xl border border-[#EADAF1] px-3 py-2 text-sm text-secondary-600"
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="space-y-3 border-b border-[#EADAF1] pb-4">
             <p className="text-sm font-semibold text-primary-900">
               {t("Start Time")}
             </p>
@@ -555,7 +621,9 @@ export default function TabsHomePage() {
                   setLocalFilters((prev) => ({
                     ...prev,
                     start_time_between: null
-                  }))
+                  })),
+                null,
+                filterChipClassName
               )}
               {timeRanges.map((range, index) =>
                 renderChip(
@@ -567,29 +635,11 @@ export default function TabsHomePage() {
                     setLocalFilters((prev) => ({
                       ...prev,
                       start_time_between: range.range
-                    }))
+                    })),
+                  null,
+                  filterChipClassName
                 )
               )}
-            </div>
-          </div>
-
-          <div className="space-y-3 border-b border-[#EADAF1] pb-4">
-            <p className="text-sm font-semibold text-primary-900">
-              {t("Start date")}
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <input
-                type="date"
-                value={localFilters.start_date_between?.[0] ?? ""}
-                onChange={(event) => updateDateRange(0, event.target.value)}
-                className="rounded-2xl border border-[#EADAF1] px-3 py-2 text-sm text-secondary-600"
-              />
-              <input
-                type="date"
-                value={localFilters.start_date_between?.[1] ?? ""}
-                onChange={(event) => updateDateRange(1, event.target.value)}
-                className="rounded-2xl border border-[#EADAF1] px-3 py-2 text-sm text-secondary-600"
-              />
             </div>
           </div>
 
@@ -598,16 +648,15 @@ export default function TabsHomePage() {
               {t("Interests")}
             </p>
             <select
-              value={localFilters.interests || ""}
-              onChange={(event) =>
-                setLocalFilters((prev) => ({
-                  ...prev,
-                  interests: event.target.value || null
-                }))
-              }
-              className="w-full rounded-2xl border border-[#EADAF1] px-3 py-2 text-sm text-secondary-600"
+              value=""
+              onChange={(event) => {
+                const value = event.target.value;
+                if (!value) return;
+                addMultiFilter("interests", value);
+              }}
+              className="min-h-[40px] w-full rounded-2xl border border-[#EADAF1] px-3 py-2 text-sm text-secondary-600"
             >
-              <option value="">{t("All")}</option>
+              <option value="">{t("Select")}</option>
               {interests.map((interest) => (
                 <option
                   key={interest.value}
@@ -617,6 +666,21 @@ export default function TabsHomePage() {
                 </option>
               ))}
             </select>
+            {localFilters.interests?.length ? (
+              <div className="flex flex-wrap gap-2 pt-2">
+                {localFilters.interests.map((value) => (
+                  <button
+                    key={`selected-interest-${value}`}
+                    type="button"
+                    onClick={() => removeMultiFilter("interests", value)}
+                    className={`flex items-center gap-2 border border-secondary-500 bg-secondary-500 text-sm font-semibold text-white ${filterChipClassName}`}
+                  >
+                    <span>{interestLabelByValue.get(value) || value}</span>
+                    <span className="text-xs">x</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
 
           <div className="space-y-3">
@@ -631,7 +695,7 @@ export default function TabsHomePage() {
                   marital_status: event.target.value || null
                 }))
               }
-              className="w-full rounded-2xl border border-[#EADAF1] px-3 py-2 text-sm text-secondary-600"
+              className="min-h-[40px] w-full rounded-2xl border border-[#EADAF1] px-3 py-2 text-sm text-secondary-600"
             >
               <option value="">{t("All")}</option>
               {maritalStatus.map((status) => (
