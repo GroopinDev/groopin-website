@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 
 import OfferMainDetails from "../../../../../components/offers/offer-main-details";
@@ -9,12 +10,14 @@ import UserAvatar from "../../../../../components/user/user-avatar";
 import UsersAvatarsList from "../../../../../components/user/users-avatars-list";
 import Button from "../../../../../components/ui/button";
 import Modal from "../../../../../components/ui/modal";
-import QrCodeCanvas, {
-  drawQrToCanvas
-} from "../../../../../components/ui/qr-code";
 import { useI18n } from "../../../../../components/i18n-provider";
 import { apiRequest } from "../../../../lib/api-client";
 import { getUser } from "../../../../lib/session";
+
+const QrCodeCanvas = dynamic(
+  () => import("../../../../../components/ui/qr-code"),
+  { ssr: false }
+);
 
 const HeartIcon = ({ filled }) => (
   <svg
@@ -69,6 +72,65 @@ const loadImage = (src) =>
     img.onerror = () => reject(new Error("Failed to load image"));
     img.src = src;
   });
+
+const CARD_BASE = "rounded-3xl border border-[#EADAF1] bg-white p-5";
+
+const OfferDetailsSkeleton = () => (
+  <div className="space-y-6 animate-pulse">
+    <div className="overflow-hidden rounded-3xl border border-[#EADAF1] bg-white">
+      <div className="h-56 bg-neutral-100 sm:h-64" />
+      <div className="space-y-4 px-5 pb-6 pt-6">
+        <div className="flex items-center justify-between">
+          <div className="h-5 w-28 rounded-full bg-neutral-200" />
+          <div className="h-5 w-20 rounded-full bg-neutral-200" />
+        </div>
+        <div className="space-y-3">
+          <div className="h-7 w-3/4 rounded bg-neutral-200" />
+          <div className="h-4 w-1/3 rounded bg-neutral-200" />
+          <div className="h-4 w-1/4 rounded bg-neutral-200" />
+        </div>
+      </div>
+    </div>
+
+    <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+      <section className="space-y-6">
+        <div className={CARD_BASE}>
+          <div className="h-4 w-24 rounded bg-neutral-200" />
+          <div className="mt-4 flex items-center gap-3">
+            <div className="h-14 w-14 rounded-full bg-neutral-200" />
+            <div className="space-y-2">
+              <div className="h-4 w-40 rounded bg-neutral-200" />
+              <div className="h-3 w-24 rounded bg-neutral-200" />
+            </div>
+          </div>
+          <div className="mt-4 h-16 rounded-2xl bg-neutral-100" />
+        </div>
+
+        <div className={CARD_BASE}>
+          <div className="h-4 w-24 rounded bg-neutral-200" />
+          <div className="mt-4 h-24 rounded-2xl bg-neutral-100" />
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="h-16 rounded-2xl bg-neutral-100" />
+            <div className="h-16 rounded-2xl bg-neutral-100" />
+          </div>
+        </div>
+
+        <div className={CARD_BASE}>
+          <div className="h-4 w-24 rounded bg-neutral-200" />
+          <div className="mt-3 h-20 rounded-2xl bg-neutral-100" />
+        </div>
+      </section>
+
+      <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+        <div className={CARD_BASE}>
+          <div className="h-4 w-24 rounded bg-neutral-200" />
+          <div className="mt-4 h-10 rounded-full bg-neutral-100" />
+          <div className="mt-3 h-10 rounded-full bg-neutral-100" />
+        </div>
+      </aside>
+    </div>
+  </div>
+);
 
 export default function OfferDetailsPage() {
   const params = useParams();
@@ -253,7 +315,7 @@ export default function OfferDetailsPage() {
   }, [offer?.id, offer?.auth_user_is_participant, offer?.owner?.id, currentUser?.id, t]);
 
   if (status === "loading") {
-    return <div className="h-40 animate-pulse rounded-2xl bg-neutral-100" />;
+    return <OfferDetailsSkeleton />;
   }
 
   if (status === "error" || !offer) {
@@ -354,7 +416,7 @@ export default function OfferDetailsPage() {
     const ageDate = new Date(diff);
     return Math.abs(ageDate.getUTCFullYear() - 1970);
   };
-  const cardBase = "rounded-3xl border border-[#EADAF1] bg-white p-5";
+  const cardBase = CARD_BASE;
   const sectionTitle =
     "text-sm font-semibold uppercase tracking-[0.2em] text-primary-700";
   const formatShortToken = (date, formatLocale, options) => {
@@ -513,6 +575,9 @@ export default function OfferDetailsPage() {
     setShareBusy(true);
     setShareFeedback("");
     try {
+      const { drawQrToCanvas } = await import(
+        "../../../../../components/ui/qr-code"
+      );
       const canvas = document.createElement("canvas");
       const width = 720;
       const height = 980;
