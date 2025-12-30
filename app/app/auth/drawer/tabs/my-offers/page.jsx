@@ -15,7 +15,7 @@ export default function MyOffersPage() {
   const [offers, setOffers] = useState([]);
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("draft");
+  const [selectedStatus, setSelectedStatus] = useState("active");
   const [isBulkModalOpen, setBulkModalOpen] = useState(false);
   const user = getUser();
 
