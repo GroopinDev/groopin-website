@@ -15,13 +15,13 @@ export default function MyOffersPage() {
   const [offers, setOffers] = useState([]);
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("active");
+  const [selectedStatus, setSelectedStatus] = useState("draft");
   const [isBulkModalOpen, setBulkModalOpen] = useState(false);
   const user = getUser();
 
   const STATUS_FILTERS = [
-    { label: t("Actives"), value: "active" },
     { label: t("Draft"), value: "draft" },
+    { label: t("Actives"), value: "active" },
     { label: t("Pending"), value: "pending" },
     { label: t("closed"), value: "closed" }
   ];
