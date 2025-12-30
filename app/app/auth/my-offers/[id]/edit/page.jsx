@@ -70,10 +70,57 @@ const normalizeFieldError = (errors, field) => {
   return value || "";
 };
 
+const normalizeQuestionType = (type) =>
+  String(type || "").replace("-", "_");
+
+const parseMultiValue = (value) => {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item));
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed.map((item) => String(item));
+        }
+      } catch {
+        // Ignore JSON parse errors and treat as a single value.
+      }
+    }
+    return trimmed ? [trimmed] : [];
+  }
+  if (value === null || value === undefined) {
+    return [];
+  }
+  return [String(value)];
+};
+
 const normalizeDynamicAnswers = (answers) => {
   if (!answers || typeof answers !== "object") return {};
   return Object.entries(answers).reduce((acc, [key, value]) => {
     if (value === null || value === undefined) return acc;
+    if (Array.isArray(value)) {
+      acc[key] = value.map((item) => String(item));
+      return acc;
+    }
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) {
+            acc[key] = parsed.map((item) => String(item));
+            return acc;
+          }
+        } catch {
+          // Ignore JSON parse errors and keep the raw string.
+        }
+      }
+      acc[key] = value;
+      return acc;
+    }
     acc[key] = String(value);
     return acc;
   }, {});
@@ -228,7 +275,10 @@ export default function EditMyOfferPage() {
 
     const cleanedDynamicQuestions = Object.fromEntries(
       Object.entries(formValues.dynamic_questions || {}).filter(
-        ([_, value]) => value !== "" && value !== null && value !== undefined
+        ([_, value]) => {
+          if (Array.isArray(value)) return value.length > 0;
+          return value !== "" && value !== null && value !== undefined;
+        }
       )
     );
 
@@ -546,8 +596,13 @@ export default function EditMyOfferPage() {
             {t("offers.extra_questions")}
           </p>
           {dynamicQuestions.map((question) => {
+            const questionType = normalizeQuestionType(question.type);
+            const rawQuestionValue =
+              formValues.dynamic_questions?.[question.name];
             const questionValue =
-              formValues.dynamic_questions?.[question.name] ?? "";
+              questionType === "multi_select"
+                ? parseMultiValue(rawQuestionValue)
+                : rawQuestionValue ?? "";
             const error = normalizeFieldError(
               fieldErrors,
               `dynamic_questions.${question.name}`
@@ -567,7 +622,7 @@ export default function EditMyOfferPage() {
               );
             }
 
-            if (question.type === "select" || question.type === "select_buttons") {
+            if (questionType === "select" || questionType === "select_buttons") {
               return (
                 <div key={question.id} className="space-y-1">
                   <label className="mb-1 block text-lg text-primary-500">
@@ -598,7 +653,41 @@ export default function EditMyOfferPage() {
               );
             }
 
-            if (question.type === "date") {
+            if (questionType === "multi_select") {
+              return (
+                <div key={question.id} className="space-y-1">
+                  <label className="mb-1 block text-lg text-primary-500">
+                    {question.label}
+                  </label>
+                  <select
+                    multiple
+                    value={questionValue}
+                    onChange={(event) => {
+                      const selectedValues = Array.from(
+                        event.target.selectedOptions
+                      ).map((option) => option.value);
+                      updateDynamicQuestion(question.name, selectedValues);
+                    }}
+                    className={`w-full min-h-[52px] rounded-2xl border-2 px-4 py-3 text-base leading-6 text-secondary-400 outline-none focus:border-primary-500 ${
+                      error ? "border-danger-600" : "border-[#EADAF1]"
+                    }`}
+                  >
+                    {(question.formatted_settings?.options || []).map(
+                      (option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      )
+                    )}
+                  </select>
+                  {error ? (
+                    <p className="text-sm text-danger-600">{error}</p>
+                  ) : null}
+                </div>
+              );
+            }
+
+            if (questionType === "date") {
               return (
                 <Input
                   key={question.id}
