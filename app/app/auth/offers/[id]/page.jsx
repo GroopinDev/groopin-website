@@ -350,6 +350,51 @@ export default function OfferDetailsPage() {
     t
   ]);
 
+  const dynamicAnswers =
+    offer?.resolved_dynamic_answers || offer?.dynamic_answers || {};
+  const dynamicEntries = Object.entries(dynamicAnswers);
+  const dynamicOptionLabels = useMemo(() => {
+    const map = new Map();
+    offerQuestions.forEach((question) => {
+      const options = question?.formatted_settings?.options || [];
+      map.set(
+        question.name,
+        new Map(options.map((option) => [String(option.value), option.label]))
+      );
+    });
+    return map;
+  }, [offerQuestions]);
+  const preferenceChips = useMemo(() => {
+    if (!dynamicEntries.length) return [];
+    const chips = [];
+    dynamicEntries.forEach(([key, rawValue]) => {
+      let values = Array.isArray(rawValue) ? rawValue : [rawValue];
+      if (typeof rawValue === "string") {
+        const trimmed = rawValue.trim();
+        if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+          try {
+            const parsed = JSON.parse(trimmed);
+            if (Array.isArray(parsed)) {
+              values = parsed;
+            }
+          } catch {
+            // keep raw string
+          }
+        }
+      }
+      values.forEach((value, index) => {
+        if (value === null || value === undefined || value === "") return;
+        const labelMap = dynamicOptionLabels.get(key);
+        const label =
+          labelMap?.get(String(value)) ||
+          getLocalizedText(value, locale) ||
+          String(value);
+        chips.push({ key: `${key}-${index}-${String(value)}`, label });
+      });
+    });
+    return chips;
+  }, [dynamicEntries, dynamicOptionLabels, locale]);
+
   if (status === "loading") {
     return <OfferDetailsSkeleton />;
   }
@@ -425,50 +470,6 @@ export default function OfferDetailsPage() {
   const participantsHref = isOwner
     ? `/app/auth/my-offers/${offer.id}/participants`
     : `/app/auth/offers/${offer.id}/participants`;
-  const dynamicAnswers =
-    offer?.resolved_dynamic_answers || offer?.dynamic_answers || {};
-  const dynamicEntries = Object.entries(dynamicAnswers);
-  const dynamicOptionLabels = useMemo(() => {
-    const map = new Map();
-    offerQuestions.forEach((question) => {
-      const options = question?.formatted_settings?.options || [];
-      map.set(
-        question.name,
-        new Map(options.map((option) => [String(option.value), option.label]))
-      );
-    });
-    return map;
-  }, [offerQuestions]);
-  const preferenceChips = useMemo(() => {
-    if (!dynamicEntries.length) return [];
-    const chips = [];
-    dynamicEntries.forEach(([key, rawValue]) => {
-      let values = Array.isArray(rawValue) ? rawValue : [rawValue];
-      if (typeof rawValue === "string") {
-        const trimmed = rawValue.trim();
-        if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
-          try {
-            const parsed = JSON.parse(trimmed);
-            if (Array.isArray(parsed)) {
-              values = parsed;
-            }
-          } catch {
-            // keep raw string
-          }
-        }
-      }
-      values.forEach((value, index) => {
-        if (value === null || value === undefined || value === "") return;
-        const labelMap = dynamicOptionLabels.get(key);
-        const label =
-          labelMap?.get(String(value)) ||
-          getLocalizedText(value, locale) ||
-          String(value);
-        chips.push({ key: `${key}-${index}-${String(value)}`, label });
-      });
-    });
-    return chips;
-  }, [dynamicEntries, dynamicOptionLabels, locale]);
   const participantsList = offer?.participants || [];
   const ownerParticipant = participantsList.find(
     (user) => user.id === offer?.owner?.id

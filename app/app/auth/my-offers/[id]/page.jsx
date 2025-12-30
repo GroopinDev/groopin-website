@@ -398,28 +398,6 @@ export default function MyOfferDetailsPage() {
     };
   }, [isScannerOpen, t]);
 
-  if (status === "loading") {
-    return <div className="h-40 animate-pulse rounded-2xl bg-neutral-100" />;
-  }
-
-  if (status === "error" || !offer) {
-    return (
-      <p className="text-sm text-danger-600">{t("no_offer_available")}</p>
-    );
-  }
-
-  const backgroundUrl =
-    offer?.category?.background_image_url ||
-    offer?.category?.parent?.background_image_url ||
-    "";
-  const statusLabel =
-    offer?.localized_status ||
-    (offer?.is_draft
-      ? t("Draft")
-      : offer?.is_closed
-        ? t("closed")
-        : t("Actives"));
-  const pendingCount = offer?.pending_participants_count || 0;
   const dynamicAnswers =
     offer?.resolved_dynamic_answers || offer?.dynamic_answers || {};
   const dynamicEntries = Object.entries(dynamicAnswers);
@@ -464,6 +442,29 @@ export default function MyOfferDetailsPage() {
     });
     return chips;
   }, [dynamicEntries, dynamicOptionLabels, locale]);
+
+  if (status === "loading") {
+    return <div className="h-40 animate-pulse rounded-2xl bg-neutral-100" />;
+  }
+
+  if (status === "error" || !offer) {
+    return (
+      <p className="text-sm text-danger-600">{t("no_offer_available")}</p>
+    );
+  }
+
+  const backgroundUrl =
+    offer?.category?.background_image_url ||
+    offer?.category?.parent?.background_image_url ||
+    "";
+  const statusLabel =
+    offer?.localized_status ||
+    (offer?.is_draft
+      ? t("Draft")
+      : offer?.is_closed
+        ? t("closed")
+        : t("Actives"));
+  const pendingCount = offer?.pending_participants_count || 0;
   const isDraft = Boolean(offer?.is_draft) || offer?.status === "draft";
   const canPublish = isDraft && actionState === "idle";
   const participantsList = offer?.participants || [];
