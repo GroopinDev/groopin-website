@@ -267,12 +267,6 @@ export default function OfferCard({ offer, currentUserId }) {
             </h3>
           </div>
           <div className="absolute right-4 top-4 flex items-center gap-2">
-            {isOwner && pendingCount > 0 && !isClosed ? (
-              <span className="flex items-center gap-1 rounded-full bg-secondary-500 px-2 py-1 text-[10px] font-semibold text-white shadow-sm">
-                <UserPlusIcon size={12} className="text-white" />
-                {pendingCount > 99 ? "99" : pendingCount}
-              </span>
-            ) : null}
             {isOffersContext && !isActiveStatus ? (
               <span
                 className={`whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-semibold ${statusTone}`}
@@ -308,9 +302,17 @@ export default function OfferCard({ offer, currentUserId }) {
                 ) : null}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-primary-900">
-                  {ownerFullName}
-                </p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate text-sm font-semibold text-primary-900">
+                    {ownerFullName}
+                  </p>
+                  {isOwner && pendingCount > 0 && !isClosed ? (
+                    <span className="flex items-center gap-1 rounded-full bg-secondary-500 px-2 py-1 text-[10px] font-semibold text-white shadow-sm">
+                      <UserPlusIcon size={12} className="text-white" />
+                      {pendingCount > 99 ? "99" : pendingCount}
+                    </span>
+                  ) : null}
+                </div>
                 <div className="mt-1 min-h-[28px]">
                   <UsersAvatarsList
                     users={offer.participants || []}
