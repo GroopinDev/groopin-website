@@ -15,7 +15,12 @@ export default function ProfilePage() {
   const [createdOffers, setCreatedOffers] = useState([]);
   const [participatedOffers, setParticipatedOffers] = useState([]);
   const [status, setStatus] = useState("loading");
+  const [showEmail, setShowEmail] = useState(false);
   const user = getUser();
+  const ratingRaw = user?.average_rating ?? user?.rating ?? null;
+  const ratingValue =
+    typeof ratingRaw === "string" ? Number(ratingRaw) : ratingRaw;
+  const hasRating = Number.isFinite(ratingValue) && ratingValue > 0;
   const memberSinceDate = user?.created_at ? new Date(user.created_at) : null;
   const memberSinceLabel =
     memberSinceDate && !Number.isNaN(memberSinceDate.valueOf())
@@ -94,6 +99,34 @@ export default function ProfilePage() {
     }).format(date);
     return `${day} ${month} ${year}`;
   };
+  const getAge = (profileUser) => {
+    if (typeof profileUser?.age === "number") return profileUser.age;
+    if (!profileUser?.date_of_birth) return null;
+    const date = new Date(profileUser.date_of_birth);
+    if (Number.isNaN(date.getTime())) return null;
+    const diff = Date.now() - date.getTime();
+    const ageDate = new Date(diff);
+    return Math.abs(ageDate.getUTCFullYear() - 1970);
+  };
+  const ageValue = getAge(user);
+  const ageLabel =
+    typeof ageValue === "number"
+      ? t("years_old", { count: ageValue })
+      : t("nothingToShow");
+  const maskEmail = (value) => {
+    if (!value || !value.includes("@")) return "********";
+    const [localPart, domainPart] = value.split("@");
+    if (!localPart || !domainPart) return "********";
+    const domainPieces = domainPart.split(".");
+    const domainLabel = domainPieces[0] || "";
+    const domainSuffix = domainPieces.length > 1 ? domainPieces.slice(1).join(".") : "";
+    const localMasked = `${localPart[0]}***`;
+    const domainMasked = `${domainLabel[0] || "*"}***`;
+    return domainSuffix
+      ? `${localMasked}@${domainMasked}.${domainSuffix}`
+      : `${localMasked}@${domainMasked}`;
+  };
+  const emailLabel = user?.email ? (showEmail ? user.email : maskEmail(user.email)) : t("nothingToShow");
 
   useEffect(() => {
     Promise.all([
@@ -134,18 +167,21 @@ export default function ProfilePage() {
           <p className="text-xl font-semibold text-primary-900">
             {user.first_name} {user.last_name}
           </p>
-          {user.average_rating ? (
+          <p className="text-sm text-secondary-500">
+            {t("Age")}: {ageLabel}
+          </p>
+          {hasRating ? (
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1">
                 {Array.from({ length: 5 }).map((_, index) => (
                   <StarIcon
                     key={`star-${index}`}
-                    filled={index + 1 <= Math.round(user.average_rating)}
+                    filled={index + 1 <= Math.round(ratingValue)}
                   />
                 ))}
               </div>
               <span className="text-sm text-secondary-500">
-                {user.average_rating.toFixed(1)}/5
+                {ratingValue.toFixed(1)}/5
               </span>
             </div>
           ) : (
@@ -167,6 +203,28 @@ export default function ProfilePage() {
             </p>
           </div>
         ))}
+        <div className="sm:col-span-2 lg:col-span-4">
+          <p className="text-xs uppercase tracking-wide text-secondary-400">
+            {t("Email")}
+          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <span className="text-lg font-semibold text-primary-900 break-all">
+              {emailLabel}
+            </span>
+            {user?.email ? (
+              <button
+                type="button"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#EADAF1] text-secondary-500 transition hover:text-primary-600"
+                aria-label={
+                  showEmail ? t("profile.hide_email") : t("profile.show_email")
+                }
+                onClick={() => setShowEmail((prev) => !prev)}
+              >
+                <EyeIcon open={showEmail} />
+              </button>
+            ) : null}
+          </div>
+        </div>
       </div>
 
       <div className="rounded-3xl border border-[#EADAF1] bg-white p-5">
@@ -432,6 +490,42 @@ function InfoIcon({ type }) {
       <circle cx="4" cy="6" r="1.2" />
       <circle cx="4" cy="12" r="1.2" />
       <circle cx="4" cy="18" r="1.2" />
+    </svg>
+  );
+}
+
+function EyeIcon({ open }) {
+  if (open) {
+    return (
+      <svg
+        className="h-4 w-4"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6-10-6-10-6Z" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg
+      className="h-4 w-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6-10-6-10-6Z" />
+      <path d="m4 4 16 16" />
     </svg>
   );
 }

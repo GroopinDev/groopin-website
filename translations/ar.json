@@ -464,11 +464,13 @@
     "complete_profile_question": "ملف تعريف محدَّث يعني تجربة مثالية",
     "edit_profile": "تعديل الملف الشخصي",
     "edit_profile_information": "تعديل معلومات الملف الشخصي",
+    "hide_email": "إخفاء البريد الإلكتروني",
     "member_since": "عضو منذ",
     "offers_created": "العروض المنشأة",
     "offers_history": "سجل العروض",
     "participated": "شارك",
     "participation_history": " سجل المشاركة",
+    "show_email": "إظهار البريد الإلكتروني",
     "survey": "تفاصيل الملف الشخصي",
     "title": "ملفي الشخصي"
   },
