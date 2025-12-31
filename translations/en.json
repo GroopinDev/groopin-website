@@ -432,6 +432,7 @@
     "end_time": "End time",
     "end_time_placeholder": "Enter end time",
     "extra_questions": "Groop preferences",
+    "multi_select_placeholder": "Multiple selection available",
     "ticketing_label": "Enable ticketing for this offer",
     "ticketing_hint": "Generate tickets and QR codes for participants.",
     "max_participants": "Maximum Participants",

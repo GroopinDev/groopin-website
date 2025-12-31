@@ -366,51 +366,55 @@ export default function CreateOfferPage() {
         required
       />
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Input
-          name="start_date"
-          label={renderRequiredLabel(t("offers.start_date"))}
-          type="date"
-          value={formValues.start_date}
-          onChange={(event) => updateField("start_date", event.target.value)}
-          error={normalizeFieldError(fieldErrors, "start_date")}
-          inputClassName="brand-picker"
-          placeholder={t("offers.start_date_placeholder")}
-          required
-        />
-        <Input
-          name="start_time"
-          label={renderRequiredLabel(t("offers.start_time"))}
-          type="time"
-          value={formValues.start_time}
-          onChange={(event) => updateField("start_time", event.target.value)}
-          error={normalizeFieldError(fieldErrors, "start_time")}
-          inputClassName="brand-picker"
-          placeholder={t("offers.start_time_placeholder")}
-          required
-        />
-        <Input
-          name="end_date"
-          label={renderRequiredLabel(t("offers.end_date"))}
-          type="date"
-          value={formValues.end_date}
-          onChange={(event) => updateField("end_date", event.target.value)}
-          error={normalizeFieldError(fieldErrors, "end_date")}
-          inputClassName="brand-picker"
-          placeholder={t("offers.end_date_placeholder")}
-          required
-        />
-        <Input
-          name="end_time"
-          label={renderRequiredLabel(t("offers.end_time"))}
-          type="time"
-          value={formValues.end_time}
-          onChange={(event) => updateField("end_time", event.target.value)}
-          error={normalizeFieldError(fieldErrors, "end_time")}
-          inputClassName="brand-picker"
-          placeholder={t("offers.end_time_placeholder")}
-          required
-        />
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <Input
+            name="start_date"
+            label={renderRequiredLabel(t("offers.start_date"))}
+            type="date"
+            value={formValues.start_date}
+            onChange={(event) => updateField("start_date", event.target.value)}
+            error={normalizeFieldError(fieldErrors, "start_date")}
+            inputClassName="brand-picker"
+            placeholder={t("offers.start_date_placeholder")}
+            required
+          />
+          <Input
+            name="start_time"
+            label={renderRequiredLabel(t("offers.start_time"))}
+            type="time"
+            value={formValues.start_time}
+            onChange={(event) => updateField("start_time", event.target.value)}
+            error={normalizeFieldError(fieldErrors, "start_time")}
+            inputClassName="brand-picker"
+            placeholder={t("offers.start_time_placeholder")}
+            required
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <Input
+            name="end_date"
+            label={renderRequiredLabel(t("offers.end_date"))}
+            type="date"
+            value={formValues.end_date}
+            onChange={(event) => updateField("end_date", event.target.value)}
+            error={normalizeFieldError(fieldErrors, "end_date")}
+            inputClassName="brand-picker"
+            placeholder={t("offers.end_date_placeholder")}
+            required
+          />
+          <Input
+            name="end_time"
+            label={renderRequiredLabel(t("offers.end_time"))}
+            type="time"
+            value={formValues.end_time}
+            onChange={(event) => updateField("end_time", event.target.value)}
+            error={normalizeFieldError(fieldErrors, "end_time")}
+            inputClassName="brand-picker"
+            placeholder={t("offers.end_time_placeholder")}
+            required
+          />
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -580,9 +584,9 @@ export default function CreateOfferPage() {
                         value
                       ]);
                     }}
-                    className="min-h-[40px] w-full rounded-2xl border border-[#EADAF1] px-3 py-2 text-sm text-secondary-600"
+                    className="min-h-[52px] w-full rounded-full border-2 border-[#EADAF1] px-4 py-3 text-base leading-6 text-secondary-400 outline-none focus:border-primary-500"
                   >
-                    <option value="">{t("Select")}</option>
+                    <option value="">{t("offers.multi_select_placeholder")}</option>
                     {options.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
@@ -601,7 +605,7 @@ export default function CreateOfferPage() {
                               questionValue.filter((item) => item !== value)
                             )
                           }
-                          className="flex min-h-[40px] items-center gap-2 rounded-2xl border border-secondary-500 bg-secondary-500 px-3 py-2 text-sm font-semibold text-white"
+                          className="flex min-h-[52px] items-center gap-2 rounded-full border border-secondary-500 bg-secondary-500 px-4 py-3 text-base font-semibold text-white"
                         >
                           <span>{optionLabelByValue.get(value) || value}</span>
                           <span className="text-xs">x</span>
