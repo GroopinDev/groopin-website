@@ -99,8 +99,12 @@ const parseMultiValue = (value) => {
 
 const formatCategoryLabel = (label) => {
   if (!label) return "";
-  if (label.toLowerCase() === "voyage et nature") {
+  const normalized = label.toLowerCase();
+  if (normalized === "voyage et nature") {
     return "Voyage et Nature";
+  }
+  if (normalized === "voyage & nature") {
+    return "Voyage & Nature";
   }
   return label;
 };
