@@ -39,11 +39,7 @@ export default function SettingsPage() {
   }, [blockedUsers, t]);
 
   const languageLabel =
-    locale === "fr"
-      ? t("settings.french")
-      : locale === "ar"
-        ? t("settings.arabic")
-        : t("settings.english");
+    locale === "fr" ? t("settings.french") : t("settings.english");
 
   const loadBlockedUsers = async () => {
     setBlockedStatus("loading");
@@ -244,12 +240,6 @@ export default function SettingsPage() {
             className="w-full"
             disabled={languageLoading}
             onClick={() => handleLanguageSelect("fr")}
-          />
-          <Button
-            label={t("settings.arabic")}
-            className="w-full"
-            disabled={languageLoading}
-            onClick={() => handleLanguageSelect("ar")}
           />
           <Button
             variant="outline"
