@@ -605,7 +605,7 @@ export default function CreateOfferPage() {
                               questionValue.filter((item) => item !== value)
                             )
                           }
-                          className="flex min-h-[52px] items-center gap-2 rounded-full border border-secondary-500 bg-secondary-500 px-4 py-3 text-base font-semibold text-white"
+                          className="flex min-h-[34px] items-center gap-2 rounded-full border border-secondary-500 bg-secondary-500 px-3 py-1.5 text-sm font-semibold text-white"
                         >
                           <span>{optionLabelByValue.get(value) || value}</span>
                           <span className="text-xs">x</span>

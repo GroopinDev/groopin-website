@@ -148,8 +148,7 @@ export default function OfferRatingPage() {
               </div>
             </div>
             <div className="rounded-2xl bg-[#F7F1FA] px-4 py-3 text-sm text-secondary-600">
-              {offer.city?.name || "-"}{" "}
-              {offer.start_date ? `${t("Start date")} ${offer.start_date}` : ""}
+              {offer.city?.name || "-"}
             </div>
           </div>
         </div>
