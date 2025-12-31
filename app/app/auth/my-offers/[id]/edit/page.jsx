@@ -654,40 +654,54 @@ export default function EditMyOfferPage() {
             }
 
             if (questionType === "multi_select") {
+              const options = question.formatted_settings?.options || [];
+              const optionLabelByValue = new Map(
+                options.map((option) => [String(option.value), option.label])
+              );
               return (
                 <div key={question.id} className="space-y-1">
                   <label className="mb-1 block text-lg text-primary-500">
                     {question.label}
                   </label>
-                  <div className="flex flex-wrap gap-2">
-                    {(question.formatted_settings?.options || []).map(
-                      (option) => {
-                        const optionValue = String(option.value);
-                        const isActive = questionValue.includes(optionValue);
-                        return (
-                          <button
-                            key={optionValue}
-                            type="button"
-                            onClick={() => {
-                              const nextValues = isActive
-                                ? questionValue.filter(
-                                    (item) => item !== optionValue
-                                  )
-                                : [...questionValue, optionValue];
-                              updateDynamicQuestion(question.name, nextValues);
-                            }}
-                            className={`flex items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-normal transition ${
-                              isActive
-                                ? "border-secondary-500 bg-secondary-500 text-white"
-                                : "border-[#A564C2] bg-white text-secondary-400"
-                            }`}
-                          >
-                            {option.label}
-                          </button>
-                        );
-                      }
-                    )}
-                  </div>
+                  <select
+                    value=""
+                    onChange={(event) => {
+                      const value = String(event.target.value || "");
+                      if (!value || questionValue.includes(value)) return;
+                      updateDynamicQuestion(question.name, [
+                        ...questionValue,
+                        value
+                      ]);
+                    }}
+                    className="min-h-[40px] w-full rounded-2xl border border-[#EADAF1] px-3 py-2 text-sm text-secondary-600"
+                  >
+                    <option value="">{t("Select")}</option>
+                    {options.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  {questionValue.length ? (
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {questionValue.map((value) => (
+                        <button
+                          key={`selected-${question.id}-${value}`}
+                          type="button"
+                          onClick={() =>
+                            updateDynamicQuestion(
+                              question.name,
+                              questionValue.filter((item) => item !== value)
+                            )
+                          }
+                          className="flex min-h-[40px] items-center gap-2 rounded-2xl border border-secondary-500 bg-secondary-500 px-3 py-2 text-sm font-semibold text-white"
+                        >
+                          <span>{optionLabelByValue.get(value) || value}</span>
+                          <span className="text-xs">x</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                   {error ? (
                     <p className="text-sm text-danger-600">{error}</p>
                   ) : null}
