@@ -10,6 +10,11 @@ const nextConfig = {
       },
       {
         protocol: "https",
+        hostname: "app.groopin.io",
+        pathname: "/storage/**"
+      },
+      {
+        protocol: "https",
         hostname: "ui-avatars.com",
         pathname: "/api/**"
       }
