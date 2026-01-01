@@ -222,7 +222,8 @@ export default function CreateOfferPage() {
         : null,
       description: formValues.description.trim(),
       dynamic_questions: cleanedDynamicQuestions,
-      ticketing_enabled: Boolean(formValues.ticketing_enabled)
+      ticketing_enabled: Boolean(formValues.ticketing_enabled),
+      save_as_draft: Boolean(isDraft)
     };
 
     try {
