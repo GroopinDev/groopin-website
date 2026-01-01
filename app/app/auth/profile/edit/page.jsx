@@ -7,6 +7,7 @@ import UserAvatar from "../../../../../components/user/user-avatar";
 import Button from "../../../../../components/ui/button";
 import Input from "../../../../../components/ui/input";
 import RadioGroup from "../../../../../components/ui/radio-group";
+import Modal from "../../../../../components/ui/modal";
 import { useI18n } from "../../../../../components/i18n-provider";
 import { apiRequest } from "../../../../lib/api-client";
 import { getToken, getUser, setSession } from "../../../../lib/session";
@@ -103,6 +104,22 @@ export default function ProfileEditPage() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const cropAreaRef = useRef(null);
+  const dragStateRef = useRef({
+    startX: 0,
+    startY: 0,
+    originX: 0,
+    originY: 0
+  });
+  const [isCropOpen, setIsCropOpen] = useState(false);
+  const [cropImageUrl, setCropImageUrl] = useState("");
+  const [cropFile, setCropFile] = useState(null);
+  const [cropAreaSize, setCropAreaSize] = useState(0);
+  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+  const [cropZoom, setCropZoom] = useState(1);
+  const [cropOffset, setCropOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [cropMessage, setCropMessage] = useState("");
 
   const compressAvatarImage = async (file) => {
     const maxDimension = 1024;
@@ -165,6 +182,20 @@ export default function ProfileEditPage() {
     }
   };
 
+  const cleanupCropState = () => {
+    setIsCropOpen(false);
+    setCropZoom(1);
+    setCropOffset({ x: 0, y: 0 });
+    setImageSize({ width: 0, height: 0 });
+    setCropAreaSize(0);
+    setCropMessage("");
+    if (cropImageUrl) {
+      URL.revokeObjectURL(cropImageUrl);
+    }
+    setCropImageUrl("");
+    setCropFile(null);
+  };
+
   useEffect(() => {
     let isMounted = true;
     const load = async () => {
@@ -207,6 +238,72 @@ export default function ProfileEditPage() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!isCropOpen) return;
+    const updateSize = () => {
+      if (!cropAreaRef.current) return;
+      const rect = cropAreaRef.current.getBoundingClientRect();
+      const nextSize = Math.min(rect.width, rect.height);
+      setCropAreaSize(nextSize);
+    };
+
+    updateSize();
+    window.addEventListener("resize", updateSize);
+    return () => window.removeEventListener("resize", updateSize);
+  }, [isCropOpen]);
+
+  useEffect(() => {
+    if (!cropImageUrl) return undefined;
+    let isActive = true;
+    const image = new Image();
+    image.onload = () => {
+      if (!isActive) return;
+      setImageSize({
+        width: image.naturalWidth || image.width,
+        height: image.naturalHeight || image.height
+      });
+    };
+    image.src = cropImageUrl;
+    return () => {
+      isActive = false;
+    };
+  }, [cropImageUrl]);
+
+  const baseScale =
+    cropAreaSize && imageSize.width
+      ? Math.max(
+          cropAreaSize / imageSize.width,
+          cropAreaSize / imageSize.height
+        )
+      : 1;
+  const cropScale = baseScale * cropZoom;
+  const isCropReady = cropAreaSize > 0 && imageSize.width > 0;
+
+  const clampCropOffset = (nextOffset) => {
+    if (!isCropReady) {
+      return { x: 0, y: 0 };
+    }
+    const scaledWidth = imageSize.width * cropScale;
+    const scaledHeight = imageSize.height * cropScale;
+    const maxX = Math.max(0, (scaledWidth - cropAreaSize) / 2);
+    const maxY = Math.max(0, (scaledHeight - cropAreaSize) / 2);
+    return {
+      x: Math.max(-maxX, Math.min(maxX, nextOffset.x)),
+      y: Math.max(-maxY, Math.min(maxY, nextOffset.y))
+    };
+  };
+
+  useEffect(() => {
+    if (!isCropOpen) return;
+    setCropOffset((prev) => {
+      const clamped = clampCropOffset(prev);
+      if (clamped.x === prev.x && clamped.y === prev.y) {
+        return prev;
+      }
+      return clamped;
+    });
+  }, [cropAreaSize, cropScale, imageSize, isCropOpen]);
 
   const updateField = (field, value) => {
     setFormValues((prev) => ({ ...prev, [field]: value }));
@@ -270,13 +367,22 @@ export default function ProfileEditPage() {
     }
   };
 
-  const handleAvatarUpload = async (event) => {
+  const handleAvatarSelect = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    const imageUrl = URL.createObjectURL(file);
+    setCropFile(file);
+    setCropImageUrl(imageUrl);
+    setCropZoom(1);
+    setCropOffset({ x: 0, y: 0 });
+    setCropMessage("");
+    setIsCropOpen(true);
+    event.target.value = "";
+  };
 
+  const performAvatarUpload = async (file) => {
     setIsUploading(true);
-    setMessage("");
-    setFieldErrors({});
+    setCropMessage("");
 
     try {
       const token = getToken();
@@ -311,11 +417,120 @@ export default function ProfileEditPage() {
         setSession(tokenValue, updatedUser);
       }
       setUser(updatedUser);
+      return true;
     } catch (error) {
-      setMessage(error?.message || t("profile.upload_error"));
+      setCropMessage(error?.message || t("profile.upload_error"));
+      return false;
     } finally {
       setIsUploading(false);
-      event.target.value = "";
+    }
+  };
+
+  const handleCropPointerDown = (event) => {
+    if (!isCropReady) return;
+    event.preventDefault();
+    setIsDragging(true);
+    dragStateRef.current = {
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: cropOffset.x,
+      originY: cropOffset.y
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handleCropPointerMove = (event) => {
+    if (!isDragging) return;
+    const deltaX = event.clientX - dragStateRef.current.startX;
+    const deltaY = event.clientY - dragStateRef.current.startY;
+    setCropOffset(
+      clampCropOffset({
+        x: dragStateRef.current.originX + deltaX,
+        y: dragStateRef.current.originY + deltaY
+      })
+    );
+  };
+
+  const handleCropPointerEnd = (event) => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+
+  const handleCropConfirm = async () => {
+    if (!cropFile || !cropImageUrl || !isCropReady) {
+      setCropMessage(t("profile.upload_error"));
+      return;
+    }
+
+    try {
+      const image = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject();
+        img.src = cropImageUrl;
+      });
+
+      const scaledWidth = imageSize.width * cropScale;
+      const scaledHeight = imageSize.height * cropScale;
+      const imageLeft =
+        cropAreaSize / 2 + cropOffset.x - scaledWidth / 2;
+      const imageTop =
+        cropAreaSize / 2 + cropOffset.y - scaledHeight / 2;
+      const cropSize = cropAreaSize / cropScale;
+      const cropX = (0 - imageLeft) / cropScale;
+      const cropY = (0 - imageTop) / cropScale;
+      const clampedCropX = Math.max(
+        0,
+        Math.min(imageSize.width - cropSize, cropX)
+      );
+      const clampedCropY = Math.max(
+        0,
+        Math.min(imageSize.height - cropSize, cropY)
+      );
+      const outputSize = 512;
+      const canvas = document.createElement("canvas");
+      canvas.width = outputSize;
+      canvas.height = outputSize;
+      const context = canvas.getContext("2d");
+      if (!context) {
+        setCropMessage(t("profile.upload_error"));
+        return;
+      }
+
+      context.drawImage(
+        image,
+        clampedCropX,
+        clampedCropY,
+        cropSize,
+        cropSize,
+        0,
+        0,
+        outputSize,
+        outputSize
+      );
+
+      const outputType =
+        cropFile.type === "image/png" ? "image/png" : "image/jpeg";
+      const blob = await new Promise((resolve) => {
+        canvas.toBlob(resolve, outputType, 0.9);
+      });
+      if (!blob) {
+        setCropMessage(t("profile.upload_error"));
+        return;
+      }
+
+      const croppedFile = new File([blob], cropFile.name, {
+        type: outputType
+      });
+      const success = await performAvatarUpload(croppedFile);
+      if (success) {
+        cleanupCropState();
+      }
+    } catch {
+      setCropMessage(t("profile.upload_error"));
     }
   };
 
@@ -351,7 +566,7 @@ export default function ProfileEditPage() {
           type="file"
           accept="image/*"
           className="hidden"
-          onChange={handleAvatarUpload}
+          onChange={handleAvatarSelect}
         />
         <Button
           variant="outline"
@@ -364,6 +579,79 @@ export default function ProfileEditPage() {
           disabled={isUploading}
         />
       </div>
+
+      <Modal
+        open={isCropOpen}
+        title={t("profile.change_photo")}
+        onClose={() => cleanupCropState()}
+      >
+        <div className="space-y-4">
+          <div className="flex justify-center">
+            <div
+              ref={cropAreaRef}
+              className={`relative aspect-square w-full max-w-xs overflow-hidden rounded-3xl bg-neutral-100 shadow-inner sm:max-w-sm ${
+                isDragging ? "cursor-grabbing" : "cursor-grab"
+              } touch-none`}
+              onPointerDown={handleCropPointerDown}
+              onPointerMove={handleCropPointerMove}
+              onPointerUp={handleCropPointerEnd}
+              onPointerCancel={handleCropPointerEnd}
+              onPointerLeave={handleCropPointerEnd}
+            >
+              {cropImageUrl ? (
+                <img
+                  src={cropImageUrl}
+                  alt={t("profile.change_photo")}
+                  draggable={false}
+                  className="pointer-events-none absolute left-1/2 top-1/2 max-w-none select-none"
+                  style={{
+                    transform: `translate(-50%, -50%) translate(${cropOffset.x}px, ${cropOffset.y}px) scale(${cropScale})`,
+                    transformOrigin: "center"
+                  }}
+                />
+              ) : null}
+              <div className="pointer-events-none absolute inset-0 rounded-3xl ring-2 ring-white/70" />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-secondary-400">-</span>
+            <input
+              type="range"
+              min="1"
+              max="3"
+              step="0.05"
+              value={cropZoom}
+              onChange={(event) =>
+                setCropZoom(Number(event.target.value))
+              }
+              className="w-full accent-primary-500"
+              aria-label={t("Zoom")}
+            />
+            <span className="text-sm text-secondary-400">+</span>
+          </div>
+
+          {cropMessage ? (
+            <p className="text-sm text-danger-600">{cropMessage}</p>
+          ) : null}
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button
+              variant="outline"
+              label={t("Cancel")}
+              className="w-full"
+              onClick={() => cleanupCropState()}
+              disabled={isUploading}
+            />
+            <Button
+              label={isUploading ? t("profile.uploading") : t("Confirm")}
+              className="w-full"
+              onClick={handleCropConfirm}
+              disabled={!isCropReady || isUploading}
+            />
+          </div>
+        </div>
+      </Modal>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
