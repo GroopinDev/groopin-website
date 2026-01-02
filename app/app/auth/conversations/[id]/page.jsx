@@ -10,8 +10,7 @@ import {
   ArrowLeftIcon,
   CheckIcon,
   MapPinIcon,
-  PaperAirplaneIcon,
-  PlusIcon
+  PaperAirplaneIcon
 } from "../../../../../components/ui/heroicons";
 import { useI18n } from "../../../../../components/i18n-provider";
 import { apiRequest } from "../../../../lib/api-client";
@@ -78,6 +77,43 @@ const formatDateTime = (value, locale) => {
   return day || time;
 };
 
+const AttachmentIcon = ({ size = 18, className = "" }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.7"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d="M21.44 11.05l-7.78 7.78a5 5 0 01-7.07-7.07l8.49-8.49a3.5 3.5 0 014.95 4.95l-8.13 8.13a2 2 0 01-2.83-2.83l7.42-7.42" />
+  </svg>
+);
+
+const PollIcon = ({ size = 18, className = "" }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.7"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d="M4 20V10" />
+    <path d="M10 20V4" />
+    <path d="M16 20v-6" />
+    <path d="M22 20H2" />
+  </svg>
+);
+
 const buildDayKey = (value) => {
   if (!value) return "";
   const date = new Date(value);
@@ -121,6 +157,7 @@ export default function ConversationPage() {
   const [pollState, setPollState] = useState("idle");
   const [pollError, setPollError] = useState("");
   const [pendingPollSelections, setPendingPollSelections] = useState({});
+  const [isAttachmentMenuOpen, setAttachmentMenuOpen] = useState(false);
   const [isActionModalOpen, setActionModalOpen] = useState(false);
   const [isInfoModalOpen, setInfoModalOpen] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState(null);
@@ -134,6 +171,7 @@ export default function ConversationPage() {
   const bottomRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const inputRef = useRef(null);
+  const attachmentMenuRef = useRef(null);
   const messageRefs = useRef(new Map());
   const firstScrollRef = useRef(true);
   const messagesRef = useRef([]);
@@ -171,6 +209,17 @@ export default function ConversationPage() {
   useEffect(() => {
     paginationRef.current = pagination;
   }, [pagination]);
+
+  useEffect(() => {
+    if (!isAttachmentMenuOpen) return undefined;
+    const handleClick = (event) => {
+      if (!attachmentMenuRef.current) return;
+      if (attachmentMenuRef.current.contains(event.target)) return;
+      setAttachmentMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [isAttachmentMenuOpen]);
 
   const normalizeUser = (user) => {
     if (!user) return null;
@@ -1043,6 +1092,7 @@ export default function ConversationPage() {
 
   const openPollModal = () => {
     resetPollForm();
+    setAttachmentMenuOpen(false);
     setPollModalOpen(true);
   };
 
@@ -1133,6 +1183,7 @@ export default function ConversationPage() {
     event.preventDefault();
     const trimmed = content.trim();
     if (!trimmed || sendState !== "idle") return;
+    setAttachmentMenuOpen(false);
     stickToBottomRef.current = true;
     setSendState("sending");
     setSendError("");
@@ -1238,9 +1289,6 @@ export default function ConversationPage() {
               >
                 <MapPinIcon size={14} className="text-secondary-500" />
                 <div className="min-w-0">
-                  <p className="font-semibold text-secondary-700">
-                    {t("chat.pinned_message")}
-                  </p>
                   <p className="truncate text-[11px] text-secondary-500">
                     {getPinnedPreview(pinnedMessage)}
                   </p>
@@ -1620,43 +1668,60 @@ export default function ConversationPage() {
         </div>
       ) : null}
 
-      <form
-        onSubmit={handleSend}
-        className="flex items-center gap-2 rounded-full border border-[#EADAF1] bg-white px-3 py-2"
-      >
-        {isOfferOwner ? (
-          <button
-            type="button"
-            onClick={openPollModal}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-[#EADAF1] text-secondary-600 transition hover:bg-[#F7F1FA]"
-            aria-label={t("poll.create")}
+      <div className="relative">
+        {isOfferOwner && isAttachmentMenuOpen ? (
+          <div
+            ref={attachmentMenuRef}
+            className="absolute bottom-full left-0 z-20 mb-3 w-48 rounded-2xl border border-[#EADAF1] bg-white p-2 shadow-lg"
           >
-            <PlusIcon size={18} className="text-secondary-600" />
-          </button>
+            <button
+              type="button"
+              onClick={openPollModal}
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-secondary-700 transition hover:bg-[#F7F1FA]"
+            >
+              <PollIcon size={18} className="text-secondary-600" />
+              {t("poll.create")}
+            </button>
+          </div>
         ) : null}
-        <input
-          ref={inputRef}
-          value={content}
-          onChange={(event) => {
-            setContent(event.target.value);
-            scheduleTyping(event.target.value);
-          }}
-          placeholder={t("Type a message")}
-          className="w-full bg-transparent px-2 py-2 text-base text-secondary-600 outline-none"
-        />
-        <button
-          type="submit"
-          disabled={sendState === "sending" || content.trim().length === 0}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-primary-500 via-[#822485] to-secondary-500 text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-          aria-label={t("Submit")}
+        <form
+          onSubmit={handleSend}
+          className="flex items-center gap-2 rounded-full border border-[#EADAF1] bg-white px-3 py-2"
         >
-          {sendState === "sending" ? (
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/60 border-t-white" />
-          ) : (
-            <PaperAirplaneIcon size={18} className="text-white" />
-          )}
-        </button>
-      </form>
+          {isOfferOwner ? (
+            <button
+              type="button"
+              onClick={() => setAttachmentMenuOpen((prev) => !prev)}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#EADAF1] text-secondary-600 transition hover:bg-[#F7F1FA]"
+              aria-label={t("poll.create")}
+            >
+              <AttachmentIcon size={18} className="text-secondary-600" />
+            </button>
+          ) : null}
+          <input
+            ref={inputRef}
+            value={content}
+            onChange={(event) => {
+              setContent(event.target.value);
+              scheduleTyping(event.target.value);
+            }}
+            placeholder={t("Type a message")}
+            className="w-full bg-transparent px-2 py-2 text-base text-secondary-600 outline-none"
+          />
+          <button
+            type="submit"
+            disabled={sendState === "sending" || content.trim().length === 0}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-primary-500 via-[#822485] to-secondary-500 text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            aria-label={t("Submit")}
+          >
+            {sendState === "sending" ? (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/60 border-t-white" />
+            ) : (
+              <PaperAirplaneIcon size={18} className="text-white" />
+            )}
+          </button>
+        </form>
+      </div>
       {sendError ? (
         <p className="text-xs text-danger-600">{sendError}</p>
       ) : null}

@@ -625,7 +625,6 @@
   "chat": {
     "loading_older": "Chargement des anciens messages...",
     "pin": "Epingler le message",
-    "pinned_message": "Message epingle",
     "unpin": "Retirer l'epingle"
   },
   "poll": {
