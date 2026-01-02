@@ -676,7 +676,7 @@ export default function TabsHomePage() {
                   type={dateInputType}
                   value={localFilters.start_date_between?.[0] ?? ""}
                   onChange={(event) => updateDateRange(0, event.target.value)}
-                  inputMode={dateInputType === "text" ? "numeric" : undefined}
+                  inputMode={dateInputType === "text" ? "text" : undefined}
                   placeholder={dateFallbackMeta.placeholder}
                   pattern={dateFallbackMeta.pattern}
                   className="w-full rounded-2xl border border-[#EADAF1] px-3 py-2 text-sm text-secondary-600"
@@ -688,7 +688,7 @@ export default function TabsHomePage() {
                   type={dateInputType}
                   value={localFilters.start_date_between?.[1] ?? ""}
                   onChange={(event) => updateDateRange(1, event.target.value)}
-                  inputMode={dateInputType === "text" ? "numeric" : undefined}
+                  inputMode={dateInputType === "text" ? "text" : undefined}
                   placeholder={dateFallbackMeta.placeholder}
                   pattern={dateFallbackMeta.pattern}
                   className="w-full rounded-2xl border border-[#EADAF1] px-3 py-2 text-sm text-secondary-600"

@@ -24,7 +24,7 @@ export default function Input({
   const fallbackMeta = isFallback ? getFallbackMeta(type) : {};
   const resolvedPlaceholder =
     placeholder ?? fallbackMeta.placeholder;
-  const resolvedInputMode = inputMode ?? (isFallback ? "numeric" : undefined);
+  const resolvedInputMode = inputMode ?? (isFallback ? "text" : undefined);
   const resolvedPattern = pattern ?? fallbackMeta.pattern;
 
   const borderColor = error
