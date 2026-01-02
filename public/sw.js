@@ -100,10 +100,10 @@ const resolveActionUrl = (data) => {
     case "participation.request.canceled":
     case "participation.request.removed":
     case "participation.request.exits":
-      return "/app/auth/drawer/tabs/requests";
+      return offerId ? `/app/auth/my-offers/${offerId}/participants` : "/app/auth/drawer/tabs/requests";
     case "participation.request.accepted":
     case "participation.request.rejected":
-      return "/app/auth/drawer/tabs/requests";
+      return offerId ? `/app/auth/offers/${offerId}` : "/app/auth/drawer/tabs/requests";
     case "participation.offerremoved":
       return "/app/auth/participating";
     case "participation.leavereview":
