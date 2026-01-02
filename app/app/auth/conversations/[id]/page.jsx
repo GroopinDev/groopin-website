@@ -16,10 +16,22 @@ const formatDay = (value, locale) => {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString(locale, {
-    month: "short",
-    day: "numeric"
-  });
+  const parts = new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "long",
+    year: "numeric"
+  }).formatToParts(date);
+  const day = parts.find((part) => part.type === "day")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const year = parts.find((part) => part.type === "year")?.value;
+  if (day && month && year) {
+    return `${day}-${month}-${year}`;
+  }
+  return new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "long",
+    year: "numeric"
+  }).format(date);
 };
 
 const formatTime = (value, locale) => {
@@ -30,6 +42,13 @@ const formatTime = (value, locale) => {
     hour: "2-digit",
     minute: "2-digit"
   });
+};
+
+const formatDateTime = (value, locale) => {
+  const day = formatDay(value, locale);
+  const time = formatTime(value, locale);
+  if (day && time) return `${day}, ${time}`;
+  return day || time;
 };
 
 export default function ConversationPage() {
@@ -327,11 +346,7 @@ export default function ConversationPage() {
   }, [selectedMessage, currentUserId]);
 
   const formatReadStamp = (value) => {
-    if (!value) return "";
-    const day = formatDay(value, dateLocale);
-    const time = formatTime(value, dateLocale);
-    if (day && time) return `${day} • ${time}`;
-    return day || time;
+    return formatDateTime(value, dateLocale);
   };
 
   useEffect(() => {
@@ -675,7 +690,7 @@ export default function ConversationPage() {
                           <p className="mt-2 text-[11px] text-secondary-400">
                             {isTemp
                               ? t("Loading more...")
-                              : formatTime(message.created_at, dateLocale)}
+                              : formatDateTime(message.created_at, dateLocale)}
                           </p>
                           {isMine && !isTemp ? (
                           <div className="mt-2 flex justify-end">
@@ -702,7 +717,7 @@ export default function ConversationPage() {
                 });
               })()}
               {typingUsers.length ? (
-                <div className="text-xs text-secondary-400">
+                <div className="text-xs text-primary-900">
                   {typingUsers
                     .map((user) => user.first_name || user.name || "")
                     .filter(Boolean)
