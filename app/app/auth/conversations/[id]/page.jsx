@@ -4,7 +4,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 
-import Button from "../../../../../components/ui/button";
 import Modal from "../../../../../components/ui/modal";
 import UserAvatar from "../../../../../components/user/user-avatar";
 import { ArrowLeftIcon, CheckIcon, PaperAirplaneIcon } from "../../../../../components/ui/heroicons";
@@ -46,7 +45,9 @@ export default function ConversationPage() {
   const [conversation, setConversation] = useState(null);
   const [readStates, setReadStates] = useState([]);
   const [typingUsers, setTypingUsers] = useState([]);
-  const [isSeenModalOpen, setSeenModalOpen] = useState(false);
+  const [isActionModalOpen, setActionModalOpen] = useState(false);
+  const [isInfoModalOpen, setInfoModalOpen] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState(null);
   const currentUser = getUser();
   const currentUserId =
     currentUser?.id !== null && currentUser?.id !== undefined
@@ -55,6 +56,7 @@ export default function ConversationPage() {
   const bottomRef = useRef(null);
   const firstScrollRef = useRef(true);
   const messagesRef = useRef([]);
+  const longPressTimeoutRef = useRef(null);
   const lastRemoteSignatureRef = useRef("");
   const lastConversationStampRef = useRef("");
   const lastReadSentRef = useRef(0);
@@ -288,64 +290,49 @@ export default function ConversationPage() {
     });
   }, [messages]);
 
-  const lastOutgoingMessageId = useMemo(() => {
-    for (let index = sortedMessages.length - 1; index >= 0; index -= 1) {
-      const message = sortedMessages[index];
-      if (!message || message.isTemp || message.automatic) continue;
-      if (Number(message?.user?.id) === currentUserId) {
-        return message.id;
-      }
-    }
-    return null;
-  }, [sortedMessages, currentUser?.id]);
+  const otherReaders = useMemo(() => {
+    if (!readStates.length) return [];
+    return readStates.filter((user) => Number(user.id) !== currentUserId);
+  }, [readStates, currentUserId]);
 
-  const lastOutgoingSeen = useMemo(() => {
-    if (!lastOutgoingMessageId) return false;
-    const lastId = Number(lastOutgoingMessageId);
-    if (!Number.isFinite(lastId)) return false;
-    const otherReaders = readStates.filter(
-      (user) => Number(user.id) !== currentUserId
-    );
-    if (!otherReaders.length) return false;
-    return otherReaders.every((user) => {
-      const readId = Number(user.last_read_message_id || 0);
-      return readId >= lastId;
-    });
-  }, [lastOutgoingMessageId, readStates, currentUserId]);
-
-  const seenByUsers = useMemo(() => {
-    if (!lastOutgoingMessageId) return [];
-    const lastId = Number(lastOutgoingMessageId);
-    if (!Number.isFinite(lastId)) return [];
-    return readStates
-      .filter((user) => Number(user.id) !== currentUserId)
-      .filter((user) => Number(user.last_read_message_id || 0) >= lastId)
+  const getSeenUsersForMessage = (messageId) => {
+    const messageNumber = Number(messageId);
+    if (!Number.isFinite(messageNumber)) return [];
+    if (!otherReaders.length) return [];
+    return otherReaders
+      .filter((user) => Number(user.last_read_message_id || 0) >= messageNumber)
       .sort((a, b) => {
         const aTime = a.last_read_at ? new Date(a.last_read_at).getTime() : 0;
         const bTime = b.last_read_at ? new Date(b.last_read_at).getTime() : 0;
         return bTime - aTime;
       });
-  }, [lastOutgoingMessageId, readStates, currentUserId]);
+  };
 
-  const seenSummary = useMemo(() => {
-    if (!seenByUsers.length) return "";
-    const names = seenByUsers.map((user) => {
-      return user.first_name || user.name || "";
-    }).filter(Boolean);
-    if (names.length <= 2) return names.join(", ");
-    return `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
-  }, [seenByUsers]);
+  const getSeenToneClass = (messageId) => {
+    if (!otherReaders.length) return "text-secondary-300";
+    const seenUsers = getSeenUsersForMessage(messageId);
+    return seenUsers.length === otherReaders.length
+      ? "text-secondary-600"
+      : "text-secondary-300";
+  };
 
-  const allSeen = useMemo(() => {
-    if (!lastOutgoingMessageId) return false;
-    const otherReaders = readStates.filter(
-      (user) => Number(user.id) !== currentUserId
-    );
-    if (!otherReaders.length) return false;
-    return seenByUsers.length === otherReaders.length;
-  }, [lastOutgoingMessageId, readStates, currentUserId, seenByUsers.length]);
+  const selectedSeenUsers = useMemo(() => {
+    if (!selectedMessage?.id) return [];
+    return getSeenUsersForMessage(selectedMessage.id);
+  }, [selectedMessage, otherReaders]);
 
-  const seenToneClass = allSeen ? "text-secondary-600" : "text-secondary-300";
+  const selectedIsMine = useMemo(() => {
+    if (!selectedMessage?.user?.id || currentUserId === null) return false;
+    return Number(selectedMessage.user.id) === currentUserId;
+  }, [selectedMessage, currentUserId]);
+
+  const formatReadStamp = (value) => {
+    if (!value) return "";
+    const day = formatDay(value, dateLocale);
+    const time = formatTime(value, dateLocale);
+    if (day && time) return `${day} • ${time}`;
+    return day || time;
+  };
 
   useEffect(() => {
     if (!bottomRef.current) return;
@@ -355,7 +342,7 @@ export default function ConversationPage() {
   }, [sortedMessages.length]);
 
   const sendTyping = async (isTyping) => {
-    if (!currentUser?.id) return;
+    if (!currentUserId) return;
     if (typingStateRef.current === isTyping) return;
     typingStateRef.current = isTyping;
     try {
@@ -443,6 +430,74 @@ export default function ConversationPage() {
     if (!lastMessage.id) return;
     markRead(lastMessage.id);
   }, [sortedMessages, params.id, currentUserId]);
+
+  const openMessageActions = (message) => {
+    if (!message) return;
+    setSelectedMessage(message);
+    setActionModalOpen(true);
+  };
+
+  const startLongPress = (message) => {
+    if (!message || message.isTemp) return;
+    if (longPressTimeoutRef.current) {
+      clearTimeout(longPressTimeoutRef.current);
+    }
+    longPressTimeoutRef.current = setTimeout(() => {
+      longPressTimeoutRef.current = null;
+      openMessageActions(message);
+    }, 450);
+  };
+
+  const cancelLongPress = () => {
+    if (!longPressTimeoutRef.current) return;
+    clearTimeout(longPressTimeoutRef.current);
+    longPressTimeoutRef.current = null;
+  };
+
+  useEffect(() => {
+    return () => {
+      if (longPressTimeoutRef.current) {
+        clearTimeout(longPressTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const copySelectedMessage = async () => {
+    if (!selectedMessage?.content) return;
+    const contentToCopy = selectedMessage.content;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(contentToCopy);
+        return;
+      }
+      throw new Error("Clipboard API unavailable");
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = contentToCopy;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "absolute";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+  };
+
+  const closeActionModal = () => {
+    setActionModalOpen(false);
+    setSelectedMessage(null);
+  };
+
+  const closeInfoModal = () => {
+    setInfoModalOpen(false);
+    setSelectedMessage(null);
+  };
+
+  const openInfoModal = () => {
+    setActionModalOpen(false);
+    setInfoModalOpen(true);
+  };
 
   const handleSend = async (event) => {
     event.preventDefault();
@@ -545,7 +600,7 @@ export default function ConversationPage() {
                   if (showDate) {
                     lastDate = dateKey;
                   }
-                  const isMine = message?.user?.id === currentUser?.id;
+                  const isMine = Number(message?.user?.id) === currentUserId;
                   const isTemp = Boolean(message?.isTemp);
                   if (message?.automatic) {
                     return (
@@ -586,6 +641,28 @@ export default function ConversationPage() {
                               ? "bg-[#EADAF1] text-primary-900"
                               : "bg-[#F4F4F5] text-secondary-700"
                           } ${isTemp ? "opacity-70" : ""}`}
+                          onMouseDown={
+                            isMine && !isTemp
+                              ? () => startLongPress(message)
+                              : undefined
+                          }
+                          onMouseUp={isMine && !isTemp ? cancelLongPress : undefined}
+                          onMouseLeave={isMine && !isTemp ? cancelLongPress : undefined}
+                          onTouchStart={
+                            isMine && !isTemp
+                              ? () => startLongPress(message)
+                              : undefined
+                          }
+                          onTouchEnd={isMine && !isTemp ? cancelLongPress : undefined}
+                          onTouchCancel={isMine && !isTemp ? cancelLongPress : undefined}
+                          onContextMenu={
+                            isMine && !isTemp
+                              ? (event) => {
+                                  event.preventDefault();
+                                  openMessageActions(message);
+                                }
+                              : undefined
+                          }
                         >
                           {!isMine ? (
                             <p className="text-xs font-semibold text-primary-900">
@@ -600,35 +677,23 @@ export default function ConversationPage() {
                               ? t("Loading more...")
                               : formatTime(message.created_at, dateLocale)}
                           </p>
-                          {isMine &&
-                          !isTemp &&
-                          message.id === lastOutgoingMessageId ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (seenByUsers.length) {
-                                  setSeenModalOpen(true);
-                                }
-                              }}
-                              className={`mt-2 flex items-center gap-2 text-[11px] ${seenToneClass} ${
-                                seenByUsers.length ? "cursor-pointer" : ""
-                              }`}
-                              disabled={!seenByUsers.length}
+                          {isMine && !isTemp ? (
+                          <div className="mt-2 flex justify-end">
+                            <span
+                              className={`relative inline-flex h-3 w-5 items-center justify-center ${getSeenToneClass(message.id)}`}
                             >
-                              <span className="relative inline-flex h-3 w-5 items-center justify-center">
                                 <CheckIcon
                                   size={14}
                                   strokeWidth={2.4}
-                                  className={seenToneClass}
+                                  className={getSeenToneClass(message.id)}
                                 />
                                 <CheckIcon
                                   size={14}
                                   strokeWidth={2.4}
-                                  className={`${seenToneClass} absolute left-[6px]`}
+                                  className={`${getSeenToneClass(message.id)} absolute left-[6px]`}
                                 />
                               </span>
-                              {seenSummary ? <span>{seenSummary}</span> : null}
-                            </button>
+                            </div>
                           ) : null}
                         </div>
                       </div>
@@ -681,13 +746,44 @@ export default function ConversationPage() {
         <p className="text-xs text-danger-600">{sendError}</p>
       ) : null}
       <Modal
-        open={isSeenModalOpen}
-        title={t("Seen by")}
-        onClose={() => setSeenModalOpen(false)}
+        open={isActionModalOpen}
+        title={t("Message options")}
+        onClose={closeActionModal}
       >
-        {seenByUsers.length ? (
+        {selectedIsMine ? (
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={async () => {
+                await copySelectedMessage();
+                closeActionModal();
+              }}
+              className="w-full rounded-2xl border border-[#EADAF1] px-4 py-3 text-sm font-semibold text-primary-900 transition hover:bg-[#F7F1FA]"
+            >
+              {t("Copy message")}
+            </button>
+            <button
+              type="button"
+              onClick={openInfoModal}
+              className="w-full rounded-2xl border border-[#EADAF1] px-4 py-3 text-sm font-semibold text-primary-900 transition hover:bg-[#F7F1FA]"
+            >
+              {t("Message info")}
+            </button>
+          </div>
+        ) : (
+          <p className="text-sm text-secondary-400">
+            {t("No actions available.")}
+          </p>
+        )}
+      </Modal>
+      <Modal
+        open={isInfoModalOpen}
+        title={locale === "fr" ? "Lu par" : t("Seen by")}
+        onClose={closeInfoModal}
+      >
+        {selectedSeenUsers.length ? (
           <div className="space-y-4">
-            {seenByUsers.map((user) => (
+            {selectedSeenUsers.map((user) => (
               <div
                 key={`seen-by-${user.id}`}
                 className="flex items-center gap-3"
@@ -696,11 +792,11 @@ export default function ConversationPage() {
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-primary-900">
                     {user.name ||
-                      `${user.first_name || ""} ${user.last_name || ""}`}
+                      `${user.first_name || ""} ${user.last_name || ""}`.trim()}
                   </p>
                   {user.last_read_at ? (
                     <p className="text-xs text-secondary-400">
-                      {formatTime(user.last_read_at, dateLocale)}
+                      {formatReadStamp(user.last_read_at)}
                     </p>
                   ) : null}
                 </div>
