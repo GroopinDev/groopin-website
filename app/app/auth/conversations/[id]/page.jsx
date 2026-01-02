@@ -12,6 +12,8 @@ import { apiRequest } from "../../../../lib/api-client";
 import { getEcho } from "../../../../lib/realtime-client";
 import { getUser } from "../../../../lib/session";
 
+const reactionOptions = ["❤️", "😂", "👍", "😮", "😢", "👏"];
+
 const formatDay = (value, locale) => {
   if (!value) return "";
   const date = new Date(value);
@@ -92,12 +94,14 @@ export default function ConversationPage() {
   const [isActionModalOpen, setActionModalOpen] = useState(false);
   const [isInfoModalOpen, setInfoModalOpen] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState(null);
+  const [replyToMessage, setReplyToMessage] = useState(null);
   const currentUser = getUser();
   const currentUserId =
     currentUser?.id !== null && currentUser?.id !== undefined
       ? Number(currentUser.id)
       : null;
   const bottomRef = useRef(null);
+  const inputRef = useRef(null);
   const firstScrollRef = useRef(true);
   const messagesRef = useRef([]);
   const longPressTimeoutRef = useRef(null);
@@ -124,6 +128,28 @@ export default function ConversationPage() {
     messagesRef.current = messages;
   }, [messages]);
 
+  const normalizeUser = (user) => {
+    if (!user) return null;
+    return {
+      id: user.id,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      name: user.name,
+      avatar_image_url: user.avatar_image_url,
+      uses_default_image: user.uses_default_image
+    };
+  };
+
+  const normalizeReplyTo = (replyTo) => {
+    if (!replyTo) return null;
+    return {
+      id: replyTo.id,
+      content: replyTo.content,
+      type: replyTo.type,
+      user: normalizeUser(replyTo.user)
+    };
+  };
+
   const normalizeMessage = (message) => {
     if (!message) return null;
     return {
@@ -132,15 +158,16 @@ export default function ConversationPage() {
       type: message.type,
       automatic: Boolean(message.automatic),
       created_at: message.created_at,
-      user: message.user
-        ? {
-            id: message.user.id,
-            first_name: message.user.first_name,
-            last_name: message.user.last_name,
-            name: message.user.name
-          }
-        : null
+      user: normalizeUser(message.user),
+      reply_to: normalizeReplyTo(message.reply_to),
+      reactions: Array.isArray(message.reactions) ? message.reactions : [],
+      my_reaction: message.my_reaction || null
     };
+  };
+
+  const normalizeMessages = (items) => {
+    if (!items?.length) return [];
+    return items.map(normalizeMessage).filter(Boolean);
   };
 
   const mergeIncomingMessage = (incoming) => {
@@ -160,7 +187,7 @@ export default function ConversationPage() {
         `conversations/${params.id}/messages?lite=1`,
         { cache: false }
       );
-      const remoteMessages = payload?.data || [];
+      const remoteMessages = normalizeMessages(payload?.data || []);
       const conversationData = payload?.meta?.conversation || null;
       const remoteReadStates = payload?.meta?.read_states || [];
       lastRemoteSignatureRef.current = buildMessageSignature(remoteMessages);
@@ -183,7 +210,7 @@ export default function ConversationPage() {
         `conversations/${params.id}/messages?lite=1`,
         { cache: false }
       );
-      const remoteMessages = payload?.data || [];
+      const remoteMessages = normalizeMessages(payload?.data || []);
       const conversationData = payload?.meta?.conversation || null;
       const remoteReadStates = payload?.meta?.read_states || [];
       const remoteSignature = buildMessageSignature(remoteMessages);
@@ -315,6 +342,21 @@ export default function ConversationPage() {
       }
     });
 
+    channel.listen(".message:reaction", (event) => {
+      if (Number(event?.conversation_id) !== Number(params.id)) return;
+      const messageId = event?.message_id;
+      if (!messageId) return;
+      const reactions = Array.isArray(event?.reactions)
+        ? event.reactions
+        : [];
+      setMessages((prev) =>
+        prev.map((message) => {
+          if (Number(message.id) !== Number(messageId)) return message;
+          return { ...message, reactions };
+        })
+      );
+    });
+
     return () => {
       echo.leave(`private-${channelName}`);
     };
@@ -382,6 +424,23 @@ export default function ConversationPage() {
 
   const formatReadStamp = (value) => {
     return formatDateTime(value, dateLocale);
+  };
+
+  const getUserDisplayName = (user) => {
+    if (!user) return "";
+    return (
+      user.name ||
+      `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+      user.first_name ||
+      ""
+    );
+  };
+
+  const getReplySnippet = (content) => {
+    if (!content) return "";
+    const trimmed = content.trim();
+    if (trimmed.length <= 80) return trimmed;
+    return `${trimmed.slice(0, 80)}...`;
   };
 
   useEffect(() => {
@@ -549,6 +608,54 @@ export default function ConversationPage() {
     setInfoModalOpen(true);
   };
 
+  const updateMessageReactions = (messageId, reactions, myReaction) => {
+    if (!messageId) return;
+    setMessages((prev) =>
+      prev.map((message) => {
+        if (Number(message.id) !== Number(messageId)) return message;
+        return {
+          ...message,
+          reactions: Array.isArray(reactions)
+            ? reactions
+            : message.reactions || [],
+          my_reaction:
+            myReaction !== undefined ? myReaction : message.my_reaction || null
+        };
+      })
+    );
+  };
+
+  const sendReaction = async (messageId, emoji) => {
+    if (!messageId || !emoji) return;
+    try {
+      const payload = await apiRequest(
+        `conversations/${params.id}/messages/${messageId}/reactions`,
+        {
+          method: "POST",
+          body: { emoji }
+        }
+      );
+      const data = payload?.data || {};
+      updateMessageReactions(
+        messageId,
+        data.reactions,
+        data.my_reaction ?? null
+      );
+    } catch {
+      // Ignore reaction errors.
+    }
+  };
+
+  const startReply = () => {
+    if (!selectedMessage) return;
+    setReplyToMessage(selectedMessage);
+    setActionModalOpen(false);
+    setSelectedMessage(null);
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+  };
+
   const handleSend = async (event) => {
     event.preventDefault();
     const trimmed = content.trim();
@@ -556,12 +663,30 @@ export default function ConversationPage() {
     setSendState("sending");
     setSendError("");
     const tempId = `temp-${Date.now()}`;
+    const replyPayload = replyToMessage
+      ? {
+          id: replyToMessage.id,
+          content: replyToMessage.content,
+          type: replyToMessage.type,
+          user: replyToMessage.user
+            ? {
+                id: replyToMessage.user.id,
+                first_name: replyToMessage.user.first_name,
+                last_name: replyToMessage.user.last_name,
+                name: replyToMessage.user.name
+              }
+            : null
+        }
+      : null;
     const optimisticMessage = {
       id: tempId,
       content: trimmed,
       created_at: new Date().toISOString(),
       automatic: false,
       isTemp: true,
+      reply_to: replyPayload,
+      reactions: [],
+      my_reaction: null,
       user: {
         id: currentUserId || tempId,
         first_name: currentUser?.first_name || "You"
@@ -575,7 +700,10 @@ export default function ConversationPage() {
         `conversations/${params.id}/messages?lite=1`,
         {
           method: "POST",
-          body: { content: trimmed }
+          body: {
+            content: trimmed,
+            reply_to_message_id: replyPayload?.id || null
+          }
         }
       );
       const newMessage = normalizeMessage(response?.data || null);
@@ -586,6 +714,7 @@ export default function ConversationPage() {
             : message
         )
       );
+      setReplyToMessage(null);
     } catch (err) {
       setMessages((prev) => prev.filter((message) => message.id !== tempId));
       setSendError(err?.message || t("general.error_has_occurred"));
@@ -652,6 +781,10 @@ export default function ConversationPage() {
                   }
                   const isMine = Number(message?.user?.id) === currentUserId;
                   const isTemp = Boolean(message?.isTemp);
+                  const allowActions = !isTemp;
+                  const reactions = Array.isArray(message?.reactions)
+                    ? message.reactions
+                    : [];
                   if (message?.automatic) {
                     return (
                       <div key={message.id} className="space-y-2">
@@ -692,21 +825,21 @@ export default function ConversationPage() {
                               : "bg-[#F4F4F5] text-secondary-700"
                           } ${isTemp ? "opacity-70" : ""}`}
                           onMouseDown={
-                            isMine && !isTemp
+                            allowActions
                               ? () => startLongPress(message)
                               : undefined
                           }
-                          onMouseUp={isMine && !isTemp ? cancelLongPress : undefined}
-                          onMouseLeave={isMine && !isTemp ? cancelLongPress : undefined}
+                          onMouseUp={allowActions ? cancelLongPress : undefined}
+                          onMouseLeave={allowActions ? cancelLongPress : undefined}
                           onTouchStart={
-                            isMine && !isTemp
+                            allowActions
                               ? () => startLongPress(message)
                               : undefined
                           }
-                          onTouchEnd={isMine && !isTemp ? cancelLongPress : undefined}
-                          onTouchCancel={isMine && !isTemp ? cancelLongPress : undefined}
+                          onTouchEnd={allowActions ? cancelLongPress : undefined}
+                          onTouchCancel={allowActions ? cancelLongPress : undefined}
                           onContextMenu={
-                            isMine && !isTemp
+                            allowActions
                               ? (event) => {
                                   event.preventDefault();
                                   openMessageActions(message);
@@ -714,6 +847,22 @@ export default function ConversationPage() {
                               : undefined
                           }
                         >
+                          {message.reply_to ? (
+                            <div
+                              className={`rounded-xl border-l-2 px-3 py-2 text-xs ${
+                                isMine
+                                  ? "border-secondary-500 bg-white/60 text-secondary-700"
+                                  : "border-secondary-400 bg-white/80 text-secondary-600"
+                              }`}
+                            >
+                              <p className="font-semibold">
+                                {getUserDisplayName(message.reply_to.user)}
+                              </p>
+                              <p className="mt-1 text-secondary-500">
+                                {getReplySnippet(message.reply_to.content)}
+                              </p>
+                            </div>
+                          ) : null}
                           {!isMine ? (
                             <p className="text-xs font-semibold text-primary-900">
                               {message?.user?.first_name || ""}
@@ -747,6 +896,35 @@ export default function ConversationPage() {
                           ) : null}
                         </div>
                       </div>
+                      {reactions.length ? (
+                        <div
+                          className={`flex flex-wrap gap-1 ${
+                            isMine ? "justify-end" : "justify-start"
+                          }`}
+                        >
+                          {reactions.map((reaction) => {
+                            const isMineReaction =
+                              message.my_reaction === reaction.emoji;
+                            return (
+                              <button
+                                key={`${message.id}-${reaction.emoji}`}
+                                type="button"
+                                onClick={() =>
+                                  sendReaction(message.id, reaction.emoji)
+                                }
+                                className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${
+                                  isMineReaction
+                                    ? "border-secondary-500 bg-[#F7F1FA] text-secondary-700"
+                                    : "border-[#EADAF1] bg-white text-secondary-500"
+                                }`}
+                              >
+                                <span>{reaction.emoji}</span>
+                                <span>{reaction.count}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : null}
                     </div>
                   );
                 });
@@ -762,11 +940,33 @@ export default function ConversationPage() {
         </div>
       </div>
 
+      {replyToMessage ? (
+        <div className="flex items-center justify-between rounded-2xl border border-[#EADAF1] bg-[#F7F1FA] px-3 py-2 text-xs text-secondary-600">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold text-secondary-700">
+              {t("Replying to")} {getUserDisplayName(replyToMessage.user)}
+            </p>
+            <p className="mt-1 truncate text-secondary-500">
+              {getReplySnippet(replyToMessage.content)}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setReplyToMessage(null)}
+            className="ml-3 text-sm font-semibold text-secondary-500"
+            aria-label={t("Close")}
+          >
+            x
+          </button>
+        </div>
+      ) : null}
+
       <form
         onSubmit={handleSend}
         className="flex items-center gap-2 rounded-full border border-[#EADAF1] bg-white px-3 py-2"
       >
         <input
+          ref={inputRef}
           value={content}
           onChange={(event) => {
             setContent(event.target.value);
@@ -796,31 +996,53 @@ export default function ConversationPage() {
         title={t("Message options")}
         onClose={closeActionModal}
       >
-        {selectedIsMine ? (
+        {selectedMessage ? (
           <div className="space-y-3">
+            <div className="flex flex-wrap justify-center gap-2">
+              {reactionOptions.map((emoji) => (
+                <button
+                  key={`reaction-${emoji}`}
+                  type="button"
+                  onClick={() => {
+                    sendReaction(selectedMessage.id, emoji);
+                    closeActionModal();
+                  }}
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-[#EADAF1] text-lg transition hover:bg-[#F7F1FA]"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
             <button
               type="button"
-              onClick={async () => {
-                await copySelectedMessage();
-                closeActionModal();
-              }}
+              onClick={startReply}
               className="w-full rounded-2xl border border-[#EADAF1] px-4 py-3 text-sm font-semibold text-primary-900 transition hover:bg-[#F7F1FA]"
             >
-              {t("Copy message")}
+              {t("Reply")}
             </button>
-            <button
-              type="button"
-              onClick={openInfoModal}
-              className="w-full rounded-2xl border border-[#EADAF1] px-4 py-3 text-sm font-semibold text-primary-900 transition hover:bg-[#F7F1FA]"
-            >
-              {t("Message info")}
-            </button>
+            {selectedMessage.content ? (
+              <button
+                type="button"
+                onClick={async () => {
+                  await copySelectedMessage();
+                  closeActionModal();
+                }}
+                className="w-full rounded-2xl border border-[#EADAF1] px-4 py-3 text-sm font-semibold text-primary-900 transition hover:bg-[#F7F1FA]"
+              >
+                {t("Copy message")}
+              </button>
+            ) : null}
+            {selectedIsMine ? (
+              <button
+                type="button"
+                onClick={openInfoModal}
+                className="w-full rounded-2xl border border-[#EADAF1] px-4 py-3 text-sm font-semibold text-primary-900 transition hover:bg-[#F7F1FA]"
+              >
+                {t("Message info")}
+              </button>
+            ) : null}
           </div>
-        ) : (
-          <p className="text-sm text-secondary-400">
-            {t("No actions available.")}
-          </p>
-        )}
+        ) : null}
       </Modal>
       <Modal
         open={isInfoModalOpen}
