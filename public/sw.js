@@ -1,3 +1,68 @@
+const DEFAULT_NOTIFICATION_PATH = "/app/auth/drawer/notifications";
+
+const isValidAppPath = (path) => typeof path === "string" && path.startsWith("/app/");
+
+const sanitizeUrl = (value) => {
+  if (!value) return "";
+  try {
+    const parsed = new URL(value, self.location.origin);
+    if (parsed.origin !== self.location.origin) return "";
+    if (!isValidAppPath(parsed.pathname)) return "";
+    return parsed.href;
+  } catch {
+    return "";
+  }
+};
+
+const resolveActionUrl = (data) => {
+  const action = data?.action;
+  const offerId = data?.offer_id;
+  const conversationId = data?.conversation_id;
+
+  switch (action) {
+    case "offer.approved":
+      return offerId ? `/app/auth/my-offers/${offerId}` : "";
+    case "offer.refused":
+      return "/app/auth/drawer/tabs/my-offers";
+    case "offer.created":
+    case "offer.draft":
+    case "offer.draft.reminder":
+      return offerId ? `/app/auth/my-offers/${offerId}/edit` : "";
+    case "participation.request.received":
+    case "participation.request.canceled":
+    case "participation.request.removed":
+    case "participation.request.exits":
+      return offerId ? `/app/auth/my-offers/${offerId}/participants` : "";
+    case "participation.request.accepted":
+    case "participation.request.rejected":
+      return offerId ? `/app/auth/offers/${offerId}` : "";
+    case "participation.offerremoved":
+      return "/app/auth/participating";
+    case "participation.leavereview":
+      return offerId ? `/app/auth/profile/offer-rating/${offerId}` : "";
+    case "message.created":
+      return conversationId ? `/app/auth/conversations/${conversationId}` : "";
+    case "offer.signaled":
+      return offerId ? `/app/auth/my-offers/${offerId}` : "";
+    case "account.deleted":
+      return "/app/guest/login";
+    default:
+      return offerId ? `/app/auth/my-offers/${offerId}` : "";
+  }
+};
+
+const resolveNotificationUrl = (data) => {
+  const actionUrl = resolveActionUrl(data);
+  if (actionUrl && isValidAppPath(actionUrl)) {
+    return new URL(actionUrl, self.location.origin).href;
+  }
+  const safeUrl = sanitizeUrl(data?.url);
+  if (safeUrl) {
+    return safeUrl;
+  }
+  return new URL(DEFAULT_NOTIFICATION_PATH, self.location.origin).href;
+};
+
 self.addEventListener("push", (event) => {
   let payload = {};
   if (event.data) {
@@ -11,8 +76,7 @@ self.addEventListener("push", (event) => {
   const data = payload.data || {};
   const title = payload.title || data.title || "Groopin";
   const body = payload.body || data.body || "";
-  const url = data.url || "/app/auth/drawer/notifications";
-  const resolvedUrl = new URL(url, self.location.origin).href;
+  const resolvedUrl = resolveNotificationUrl(data);
 
   const options = {
     body,
@@ -31,9 +95,9 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  const safeUrl = sanitizeUrl(event.notification?.data?.url);
   const url =
-    event.notification?.data?.url ||
-    new URL("/app/auth/drawer/notifications", self.location.origin).href;
+    safeUrl || new URL(DEFAULT_NOTIFICATION_PATH, self.location.origin).href;
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then(
