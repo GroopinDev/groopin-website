@@ -900,7 +900,7 @@ export default function ConversationPage() {
                                 : "bg-[#F4F4F5] text-secondary-700 rounded-tl-none"
                             } ${!isMine ? "mt-1" : ""} ${
                               isTemp ? "opacity-70" : ""
-                            } ${
+                            } ${!isMine ? "ml-1" : ""} ${
                               isHighlighted ? "ring-2 ring-secondary-300" : ""
                             } relative`}
                             onMouseDown={
