@@ -1,12 +1,25 @@
 const DEFAULT_NOTIFICATION_PATH = "/app/auth/drawer/tabs/requests";
+const FRONTEND_ORIGINS = new Set([
+  "https://groopin.io",
+  "https://www.groopin.io"
+]);
 
-const isValidAppPath = (path) => typeof path === "string" && path.startsWith("/app/");
+const isValidAppPath = (path) =>
+  typeof path === "string" && path.startsWith("/app/");
+
+const resolveOrigin = () => {
+  if (FRONTEND_ORIGINS.has(self.location.origin)) {
+    return self.location.origin;
+  }
+  return FRONTEND_ORIGINS.values().next().value || self.location.origin;
+};
 
 const sanitizeUrl = (value) => {
   if (!value) return "";
   try {
     const parsed = new URL(value, self.location.origin);
-    if (parsed.origin !== self.location.origin) return "";
+    const allowedOrigins = new Set([self.location.origin, ...FRONTEND_ORIGINS]);
+    if (!allowedOrigins.has(parsed.origin)) return "";
     if (!isValidAppPath(parsed.pathname)) return "";
     return parsed.href;
   } catch {
@@ -52,15 +65,16 @@ const resolveActionUrl = (data) => {
 };
 
 const resolveNotificationUrl = (data) => {
+  const targetOrigin = resolveOrigin();
   const actionUrl = resolveActionUrl(data);
   if (actionUrl && isValidAppPath(actionUrl)) {
-    return new URL(actionUrl, self.location.origin).href;
+    return new URL(actionUrl, targetOrigin).href;
   }
   const safeUrl = sanitizeUrl(data?.url);
   if (safeUrl) {
     return safeUrl;
   }
-  return new URL(DEFAULT_NOTIFICATION_PATH, self.location.origin).href;
+  return new URL(DEFAULT_NOTIFICATION_PATH, targetOrigin).href;
 };
 
 self.addEventListener("push", (event) => {
@@ -97,7 +111,7 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const safeUrl = sanitizeUrl(event.notification?.data?.url);
   const url =
-    safeUrl || new URL(DEFAULT_NOTIFICATION_PATH, self.location.origin).href;
+    safeUrl || new URL(DEFAULT_NOTIFICATION_PATH, resolveOrigin()).href;
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then(
