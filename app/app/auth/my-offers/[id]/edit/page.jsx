@@ -97,8 +97,7 @@ const parseMultiValue = (value) => {
   return [String(value)];
 };
 
-const normalizeNumericInput = (value) =>
-  String(value || "").replace(/[^\d]/g, "");
+const isDigitsOnly = (value) => /^\d+$/.test(value);
 
 const normalizeDynamicAnswers = (answers) => {
   if (!answers || typeof answers !== "object") return {};
@@ -275,6 +274,15 @@ export default function EditMyOfferPage() {
       setIsPublishing(true);
     }
     let shouldResetLoading = true;
+    const trimmedPrice = String(formValues.price || "").trim();
+    if (trimmedPrice && !isDigitsOnly(trimmedPrice)) {
+      setFieldErrors({
+        price: t("Le budget doit être renseigné en chiffres.")
+      });
+      setIsSaving(false);
+      setIsPublishing(false);
+      return;
+    }
 
     const cleanedDynamicQuestions = Object.fromEntries(
       Object.entries(formValues.dynamic_questions || {}).filter(
@@ -296,7 +304,7 @@ export default function EditMyOfferPage() {
       end_date: formValues.end_date || null,
       end_time: formValues.end_time || null,
       city_id: formValues.city_id ? Number(formValues.city_id) : null,
-      price: formValues.price ? Number(formValues.price) : null,
+      price: trimmedPrice ? Number(trimmedPrice) : null,
       address: formValues.address.trim(),
       max_participants: formValues.max_participants
         ? Number(formValues.max_participants)
@@ -542,11 +550,20 @@ export default function EditMyOfferPage() {
       <Input
         name="price"
         label={t("offers.price")}
-        type="number"
+        type="text"
         value={formValues.price}
-        onChange={(event) =>
-          updateField("price", normalizeNumericInput(event.target.value))
-        }
+        onChange={(event) => {
+          const nextValue = event.target.value;
+          updateField("price", nextValue);
+          const trimmedValue = nextValue.trim();
+          if (!trimmedValue || isDigitsOnly(trimmedValue)) {
+            setFieldErrors((prev) => {
+              if (!prev?.price) return prev;
+              const { price: _price, ...rest } = prev || {};
+              return rest;
+            });
+          }
+        }}
         error={normalizeFieldError(fieldErrors, "price")}
         placeholder={t("offers.price_placeholder")}
         inputMode="numeric"
