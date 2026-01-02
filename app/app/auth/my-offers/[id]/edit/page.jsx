@@ -154,11 +154,19 @@ export default function EditMyOfferPage() {
   const router = useRouter();
   const { t } = useI18n();
   const dateInputType = useSupportedInputType("date");
+  const timeInputType = useSupportedInputType("time");
   const isDateFallback = dateInputType === "text";
+  const isTimeFallback = timeInputType === "text";
   const dateFallbackMeta = isDateFallback
     ? {
         placeholder: "JJ/MM/AAAA",
         pattern: "[0-9]{2}/[0-9]{2}/[0-9]{4}"
+      }
+    : {};
+  const timeFallbackMeta = isTimeFallback
+    ? {
+        placeholder: "HH:MM",
+        pattern: "[0-9]{2}:[0-9]{2}"
       }
     : {};
   const [categories, setCategories] = useState([]);
@@ -542,7 +550,7 @@ export default function EditMyOfferPage() {
                 : t("offers.start_date_placeholder")
             }
             pattern={isDateFallback ? dateFallbackMeta.pattern : undefined}
-            inputMode={isDateFallback ? "numeric" : undefined}
+            inputMode={isDateFallback ? "text" : undefined}
             required
           />
           <Input
@@ -553,7 +561,13 @@ export default function EditMyOfferPage() {
             onChange={(event) => updateField("start_time", event.target.value)}
             error={normalizeFieldError(fieldErrors, "start_time")}
             inputClassName="brand-picker"
-            placeholder={t("offers.start_time_placeholder")}
+            placeholder={
+              isTimeFallback
+                ? timeFallbackMeta.placeholder
+                : t("offers.start_time_placeholder")
+            }
+            pattern={isTimeFallback ? timeFallbackMeta.pattern : undefined}
+            inputMode={isTimeFallback ? "text" : undefined}
             required
           />
         </div>
@@ -572,7 +586,7 @@ export default function EditMyOfferPage() {
                 : t("offers.end_date_placeholder")
             }
             pattern={isDateFallback ? dateFallbackMeta.pattern : undefined}
-            inputMode={isDateFallback ? "numeric" : undefined}
+            inputMode={isDateFallback ? "text" : undefined}
             required
           />
           <Input
@@ -583,7 +597,13 @@ export default function EditMyOfferPage() {
             onChange={(event) => updateField("end_time", event.target.value)}
             error={normalizeFieldError(fieldErrors, "end_time")}
             inputClassName="brand-picker"
-            placeholder={t("offers.end_time_placeholder")}
+            placeholder={
+              isTimeFallback
+                ? timeFallbackMeta.placeholder
+                : t("offers.end_time_placeholder")
+            }
+            pattern={isTimeFallback ? timeFallbackMeta.pattern : undefined}
+            inputMode={isTimeFallback ? "text" : undefined}
             required
           />
         </div>
