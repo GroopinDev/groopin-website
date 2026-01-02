@@ -100,14 +100,26 @@ const FunnelOutlineIcon = ({ size = 20, className = "" }) => (
   </svg>
 );
 
-const buildFilterParams = (filters) => {
+const buildFilterParams = (filters, derivedCityIds = null) => {
   const params = new URLSearchParams();
 
   Object.entries(filters).forEach(([key, value]) => {
     if (key === "country") return;
+    if (key === "city" && (value === null || value === undefined)) {
+      if (Array.isArray(derivedCityIds) && derivedCityIds.length > 0) {
+        params.append(`filter[${key}]`, derivedCityIds.join(","));
+      }
+      return;
+    }
     if (value === null || value === undefined) return;
 
     if (Array.isArray(value)) {
+      if (key === "city" && !value.length) {
+        if (Array.isArray(derivedCityIds) && derivedCityIds.length > 0) {
+          params.append(`filter[${key}]`, derivedCityIds.join(","));
+        }
+        return;
+      }
       if (key.includes("between")) {
         const [min, max] = value;
         if (min === null && max === null) return;
@@ -186,23 +198,18 @@ export default function TabsHomePage() {
         (city.country_code || "MA").toUpperCase() === localFilters.country
     );
   }, [cities, localFilters.country]);
-  const effectiveFilters = useMemo(() => {
+  const derivedCountryCityIds = useMemo(() => {
     if (!filters.country || (filters.city && filters.city.length)) {
-      return filters;
+      return [];
     }
     const countryCode = String(filters.country).toUpperCase();
-    const cityIds = cities
+    return cities
       .filter(
         (city) =>
           (city.country_code || "MA").toUpperCase() === countryCode
       )
       .map((city) => Number(city.id))
       .filter((id) => !Number.isNaN(id));
-    if (!cityIds.length) return filters;
-    return {
-      ...filters,
-      city: cityIds
-    };
   }, [filters, cities]);
 
   useEffect(() => {
@@ -266,7 +273,7 @@ export default function TabsHomePage() {
 
   useEffect(() => {
     setStatus("loading");
-    const query = buildFilterParams(effectiveFilters);
+    const query = buildFilterParams(filters, derivedCountryCityIds);
     const liteParam = query ? "&lite=1" : "?lite=1";
     const endpoint = query ? `offers?${query}${liteParam}` : "offers?lite=1";
     const requestId = (latestOfferRequestRef.current += 1);
@@ -282,7 +289,7 @@ export default function TabsHomePage() {
         setError(err?.message || t("general.error_has_occurred"));
         setStatus("error");
       });
-  }, [effectiveFilters, t]);
+  }, [filters, derivedCountryCityIds, t]);
 
   const hasFilters = useMemo(() => {
     return Object.entries(filters)
