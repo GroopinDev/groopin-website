@@ -158,6 +158,7 @@ export default function ConversationPage() {
   const [pollError, setPollError] = useState("");
   const [pendingPollSelections, setPendingPollSelections] = useState({});
   const [isAttachmentMenuOpen, setAttachmentMenuOpen] = useState(false);
+  const [pinnedJumpState, setPinnedJumpState] = useState("idle");
   const [isActionModalOpen, setActionModalOpen] = useState(false);
   const [isInfoModalOpen, setInfoModalOpen] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState(null);
@@ -190,6 +191,7 @@ export default function ConversationPage() {
     lastPage: 1,
     hasMore: false
   });
+  const loadingMoreRef = useRef(false);
   const dateLocale =
     locale === "fr" ? "fr-FR" : locale === "ar" ? "ar-MA" : "en-US";
 
@@ -448,7 +450,7 @@ export default function ConversationPage() {
   };
 
   const loadOlderMessages = async () => {
-    if (isLoadingOlder || !paginationRef.current?.hasMore) return;
+    if (loadingMoreRef.current || !paginationRef.current?.hasMore) return;
     const container = messagesContainerRef.current;
     if (!container) return;
     const nextPage = (paginationRef.current?.currentPage || 1) + 1;
@@ -456,6 +458,7 @@ export default function ConversationPage() {
       scrollHeight: container.scrollHeight,
       scrollTop: container.scrollTop
     };
+    loadingMoreRef.current = true;
     setIsLoadingOlder(true);
     let didAppend = false;
     try {
@@ -481,6 +484,7 @@ export default function ConversationPage() {
       if (!didAppend) {
         pendingScrollRestoreRef.current = null;
       }
+      loadingMoreRef.current = false;
       setIsLoadingOlder(false);
     }
   };
@@ -864,6 +868,47 @@ export default function ConversationPage() {
       longPressTimeoutRef.current = null;
       openMessageActions(message);
     }, 700);
+  };
+
+  const loadPinnedMessage = async (messageId) => {
+    if (!messageId || loadingMoreRef.current) return false;
+    if (messageRefs.current.get(messageId)) {
+      scrollToMessage(messageId);
+      return true;
+    }
+    if (!paginationRef.current?.hasMore) return false;
+
+    loadingMoreRef.current = true;
+    setPinnedJumpState("loading");
+    try {
+      let nextPage = paginationRef.current?.currentPage || 1;
+      while (paginationRef.current?.hasMore) {
+        nextPage += 1;
+        const payload = await apiRequest(
+          `conversations/${params.id}/messages?lite=1&page=${nextPage}`,
+          { cache: false }
+        );
+        const olderMessages = normalizeMessages(payload?.data || []);
+        setMessages((prev) => mergeMessagesById(prev, olderMessages));
+        applyPagination(payload, nextPage);
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        if (
+          olderMessages.some(
+            (message) => Number(message.id) === Number(messageId)
+          )
+        ) {
+          scrollToMessage(messageId);
+          return true;
+        }
+        if (!paginationRef.current?.hasMore) break;
+      }
+    } catch {
+      // Ignore jump errors.
+    } finally {
+      loadingMoreRef.current = false;
+      setPinnedJumpState("idle");
+    }
+    return false;
   };
 
   const cancelLongPress = () => {
@@ -1279,7 +1324,7 @@ export default function ConversationPage() {
           <div className="mb-2 flex items-center gap-3 rounded-2xl border border-[#EADAF1] bg-white px-3 py-2 text-xs text-secondary-500 shadow-sm">
             <button
               type="button"
-              onClick={() => scrollToMessage(pinnedMessage.id)}
+              onClick={() => loadPinnedMessage(pinnedMessage.id)}
               className="flex min-w-0 flex-1 items-center gap-2 text-left"
             >
               <MapPinIcon size={14} className="text-secondary-500" />
@@ -1289,6 +1334,11 @@ export default function ConversationPage() {
                 </p>
               </div>
             </button>
+            {pinnedJumpState === "loading" ? (
+              <span className="text-[11px] text-secondary-400">
+                {t("chat.loading_older")}
+              </span>
+            ) : null}
           </div>
         ) : null}
 
