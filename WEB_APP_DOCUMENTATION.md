@@ -16,7 +16,7 @@ Required environment variables (from code usage):
 - `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (waitlist API)
 - `LANDING_PAGE` or `landing_page` (if not "true", `/` redirects to `/app`)
 
-## 2) How routing works
+## 2) How routing works:
 
 This is a Next.js App Router project. The routing folders live under `app/`:
 
