@@ -897,7 +897,7 @@ export default function ConversationPage() {
                             className={`w-full rounded-2xl px-4 py-3 text-sm shadow-sm ${
                               isMine
                                 ? "bg-[#EADAF1] text-primary-900 rounded-br-sm"
-                                : "bg-[#F4F4F5] text-secondary-700 rounded-bl-sm"
+                                : "bg-[#F4F4F5] text-secondary-700 rounded-tl-none"
                             } ${isTemp ? "opacity-70" : ""} ${
                               isHighlighted ? "ring-2 ring-secondary-300" : ""
                             } relative`}
@@ -925,7 +925,7 @@ export default function ConversationPage() {
                             }
                           >
                             {!isMine ? (
-                              <span className="pointer-events-none absolute -left-3 top-3 h-0 w-0 border-y-[8px] border-r-[12px] border-y-transparent border-r-[#F4F4F5]" />
+                              <span className="pointer-events-none absolute -left-3 top-2 h-0 w-0 border-y-[8px] border-r-[12px] border-y-transparent border-r-[#F4F4F5]" />
                             ) : null}
                             {message.reply_to ? (
                               <div
