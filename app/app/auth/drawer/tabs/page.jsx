@@ -6,7 +6,7 @@ import Link from "next/link";
 import OfferCard from "../../../../../components/offers/offer-card";
 import Button from "../../../../../components/ui/button";
 import Modal from "../../../../../components/ui/modal";
-import { getFallbackMeta } from "../../../../../components/ui/input-support";
+import useSupportedInputType from "../../../../../components/ui/input-support";
 import { PlusIcon } from "../../../../../components/ui/heroicons";
 import { useI18n } from "../../../../../components/i18n-provider";
 import { apiRequest } from "../../../../lib/api-client";
@@ -98,6 +98,16 @@ const FunnelOutlineIcon = ({ size = 20, className = "" }) => (
   </svg>
 );
 
+const normalizeDateFilterValue = (value) => {
+  const trimmed = String(value || "").trim();
+  if (!trimmed) return "";
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
+    const [day, month, year] = trimmed.split("/");
+    return `${year}-${month}-${day}`;
+  }
+  return trimmed;
+};
+
 const buildFilterParams = (filters, derivedCityIds = null) => {
   const params = new URLSearchParams();
 
@@ -119,7 +129,10 @@ const buildFilterParams = (filters, derivedCityIds = null) => {
         return;
       }
       if (key.includes("between")) {
-        const [min, max] = value;
+        const [min, max] =
+          key === "start_date_between"
+            ? value.map(normalizeDateFilterValue)
+            : value;
         if (min === null && max === null) return;
         params.append(`filter[${key}]`, `${min ?? ""},${max ?? ""}`);
         return;
@@ -151,7 +164,14 @@ export default function TabsHomePage() {
   const [searchValue, setSearchValue] = useState("");
   const user = getUser();
   const latestOfferRequestRef = useRef(0);
-  const dateFallbackMeta = getFallbackMeta("date");
+  const dateInputType = useSupportedInputType("date");
+  const dateFallbackMeta =
+    dateInputType === "text"
+      ? {
+          placeholder: "JJ/MM/AAAA",
+          pattern: "[0-9]{2}/[0-9]{2}/[0-9]{4}"
+        }
+      : {};
 
   const [filters, setFilters] = useState({
     title: "",
@@ -653,10 +673,10 @@ export default function TabsHomePage() {
               <label className="space-y-1 text-sm font-semibold text-primary-900">
                 <span>{t("Start date")}</span>
                 <input
-                  type="text"
+                  type={dateInputType}
                   value={localFilters.start_date_between?.[0] ?? ""}
                   onChange={(event) => updateDateRange(0, event.target.value)}
-                  inputMode="numeric"
+                  inputMode={dateInputType === "text" ? "numeric" : undefined}
                   placeholder={dateFallbackMeta.placeholder}
                   pattern={dateFallbackMeta.pattern}
                   className="w-full rounded-2xl border border-[#EADAF1] px-3 py-2 text-sm text-secondary-600"
@@ -665,10 +685,10 @@ export default function TabsHomePage() {
               <label className="space-y-1 text-sm font-semibold text-primary-900">
                 <span>{t("End date")}</span>
                 <input
-                  type="text"
+                  type={dateInputType}
                   value={localFilters.start_date_between?.[1] ?? ""}
                   onChange={(event) => updateDateRange(1, event.target.value)}
-                  inputMode="numeric"
+                  inputMode={dateInputType === "text" ? "numeric" : undefined}
                   placeholder={dateFallbackMeta.placeholder}
                   pattern={dateFallbackMeta.pattern}
                   className="w-full rounded-2xl border border-[#EADAF1] px-3 py-2 text-sm text-secondary-600"
