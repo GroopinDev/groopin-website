@@ -898,7 +898,9 @@ export default function ConversationPage() {
                               isMine
                                 ? "bg-[#EADAF1] text-primary-900 rounded-br-sm"
                                 : "bg-[#F4F4F5] text-secondary-700 rounded-tl-none"
-                            } ${isTemp ? "opacity-70" : ""} ${
+                            } ${!isMine ? "mt-1" : ""} ${
+                              isTemp ? "opacity-70" : ""
+                            } ${
                               isHighlighted ? "ring-2 ring-secondary-300" : ""
                             } relative`}
                             onMouseDown={
