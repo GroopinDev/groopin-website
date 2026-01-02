@@ -1809,7 +1809,7 @@ export default function ConversationPage() {
             <button
               type="button"
               onClick={closePollModal}
-              className="w-full rounded-full border border-[#EADAF1] px-4 py-2 text-sm font-semibold text-secondary-600 transition hover:bg-[#F7F1FA]"
+              className="h-11 w-full rounded-full border border-secondary-500 px-4 text-sm font-semibold text-secondary-600 transition hover:bg-secondary-500/10"
               disabled={pollState === "sending"}
             >
               {t("Cancel")}
@@ -1817,7 +1817,7 @@ export default function ConversationPage() {
             <button
               type="button"
               onClick={handleCreatePoll}
-              className="w-full rounded-full bg-secondary-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-secondary-600 disabled:opacity-60"
+              className="h-11 w-full rounded-full bg-secondary-500 px-4 text-sm font-semibold text-white transition hover:bg-secondary-600 disabled:opacity-60"
               disabled={pollState === "sending"}
             >
               {pollState === "sending" ? t("poll.creating") : t("poll.create")}
