@@ -104,6 +104,7 @@ const buildFilterParams = (filters) => {
   const params = new URLSearchParams();
 
   Object.entries(filters).forEach(([key, value]) => {
+    if (key === "country") return;
     if (value === null || value === undefined) return;
 
     if (Array.isArray(value)) {
@@ -138,7 +139,6 @@ export default function TabsHomePage() {
   const [maritalStatus, setMaritalStatus] = useState([]);
   const [isFilterOpen, setFilterOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
-  const [countryFilter, setCountryFilter] = useState("");
   const user = getUser();
   const latestOfferRequestRef = useRef(0);
   const dateInputType = useSupportedInputType("date");
@@ -149,6 +149,7 @@ export default function TabsHomePage() {
     title: "",
     category: null,
     sex: null,
+    country: null,
     city: null,
     participants_count_between: null,
     budget_between: null,
@@ -179,12 +180,30 @@ export default function TabsHomePage() {
     return options.filter((option) => available.has(option.code));
   }, [cities, t]);
   const filteredCities = useMemo(() => {
-    if (!countryFilter) return [];
+    if (!localFilters.country) return [];
     return cities.filter(
       (city) =>
-        (city.country_code || "MA").toUpperCase() === countryFilter
+        (city.country_code || "MA").toUpperCase() === localFilters.country
     );
-  }, [cities, countryFilter]);
+  }, [cities, localFilters.country]);
+  const effectiveFilters = useMemo(() => {
+    if (!filters.country || (filters.city && filters.city.length)) {
+      return filters;
+    }
+    const countryCode = String(filters.country).toUpperCase();
+    const cityIds = cities
+      .filter(
+        (city) =>
+          (city.country_code || "MA").toUpperCase() === countryCode
+      )
+      .map((city) => Number(city.id))
+      .filter((id) => !Number.isNaN(id));
+    if (!cityIds.length) return filters;
+    return {
+      ...filters,
+      city: cityIds
+    };
+  }, [filters, cities]);
 
   useEffect(() => {
     apiRequest("parameters", { cacheTime: 300000 })
@@ -221,10 +240,13 @@ export default function TabsHomePage() {
     );
     if (!match) return;
     const nextCode = (match.country_code || "MA").toUpperCase();
-    if (nextCode !== countryFilter) {
-      setCountryFilter(nextCode);
+    if (nextCode !== localFilters.country) {
+      setLocalFilters((prev) => ({
+        ...prev,
+        country: nextCode
+      }));
     }
-  }, [cities, localFilters.city, countryFilter]);
+  }, [cities, localFilters.city, localFilters.country]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -244,7 +266,7 @@ export default function TabsHomePage() {
 
   useEffect(() => {
     setStatus("loading");
-    const query = buildFilterParams(filters);
+    const query = buildFilterParams(effectiveFilters);
     const liteParam = query ? "&lite=1" : "?lite=1";
     const endpoint = query ? `offers?${query}${liteParam}` : "offers?lite=1";
     const requestId = (latestOfferRequestRef.current += 1);
@@ -260,7 +282,7 @@ export default function TabsHomePage() {
         setError(err?.message || t("general.error_has_occurred"));
         setStatus("error");
       });
-  }, [filters, t]);
+  }, [effectiveFilters, t]);
 
   const hasFilters = useMemo(() => {
     return Object.entries(filters)
@@ -324,6 +346,7 @@ export default function TabsHomePage() {
     const reset = {
       ...filters,
       sex: null,
+      country: null,
       city: null,
       participants_count_between: null,
       budget_between: null,
@@ -333,7 +356,6 @@ export default function TabsHomePage() {
       interests: null,
       marital_status: null
     };
-    setCountryFilter("");
     setLocalFilters(reset);
     setFilters(reset);
   };
@@ -482,12 +504,12 @@ export default function TabsHomePage() {
               {t("offers.country")}
             </p>
             <select
-              value={countryFilter}
+              value={localFilters.country || ""}
               onChange={(event) => {
                 const nextCountry = event.target.value;
-                setCountryFilter(nextCountry);
                 setLocalFilters((prev) => ({
                   ...prev,
+                  country: nextCountry || null,
                   city: null
                 }));
               }}
@@ -515,11 +537,11 @@ export default function TabsHomePage() {
                   city: value ? [Number(value)] : null
                 }));
               }}
-              disabled={!countryFilter}
+              disabled={!localFilters.country}
               className="min-h-[40px] w-full rounded-2xl border border-[#EADAF1] px-3 py-2 text-sm text-secondary-600"
             >
               <option value="">
-                {countryFilter
+                {localFilters.country
                   ? t("All")
                   : t("offers.city_placeholder_select_country")}
               </option>
