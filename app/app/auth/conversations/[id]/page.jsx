@@ -900,7 +900,7 @@ export default function ConversationPage() {
                                 : "bg-[#F4F4F5] text-secondary-700 rounded-tl-none"
                             } ${!isMine ? "mt-1" : ""} ${
                               isTemp ? "opacity-70" : ""
-                            } ${!isMine ? "ml-1" : ""} ${
+                            } ${!isMine ? "ml-3" : ""} ${
                               isHighlighted ? "ring-2 ring-secondary-300" : ""
                             } relative`}
                             onMouseDown={
@@ -927,7 +927,7 @@ export default function ConversationPage() {
                             }
                           >
                             {!isMine ? (
-                              <span className="pointer-events-none absolute -left-3 top-2 h-0 w-0 border-y-[8px] border-r-[12px] border-y-transparent border-r-[#F4F4F5]" />
+                              <span className="pointer-events-none absolute -left-4 top-1 h-0 w-0 border-y-[10px] border-r-[14px] border-y-transparent border-r-[#F4F4F5]" />
                             ) : null}
                             {message.reply_to ? (
                               <div
