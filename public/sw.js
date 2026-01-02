@@ -14,6 +14,30 @@ const resolveOrigin = () => {
   return FRONTEND_ORIGINS.values().next().value || self.location.origin;
 };
 
+const normalizePushData = (value) => {
+  if (!value) return {};
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  if (typeof value === "object") {
+    return value;
+  }
+  return {};
+};
+
+const normalizeNestedData = (value) => {
+  if (!value || typeof value !== "object") return value;
+  if (typeof value.data === "string") {
+    return { ...value, data: normalizePushData(value.data) };
+  }
+  return value;
+};
+
 const sanitizeUrl = (value) => {
   if (!value) return "";
   try {
@@ -27,10 +51,41 @@ const sanitizeUrl = (value) => {
   }
 };
 
+const getDataValue = (data, key) => {
+  if (!data || typeof data !== "object") return undefined;
+  if (data[key] !== undefined && data[key] !== null) {
+    return data[key];
+  }
+  const nested = data.data;
+  if (nested && typeof nested === "object") {
+    if (nested[key] !== undefined && nested[key] !== null) {
+      return nested[key];
+    }
+  }
+  return undefined;
+};
+
+const parseConversationIdFromUrl = (value) => {
+  if (!value || typeof value !== "string") return "";
+  try {
+    const parsed = new URL(value, self.location.origin);
+    const match = parsed.pathname.match(/\/app\/auth\/conversations\/(\d+)/);
+    return match ? match[1] : "";
+  } catch {
+    return "";
+  }
+};
+
 const resolveActionUrl = (data) => {
-  const action = data?.action;
-  const offerId = data?.offer_id;
-  const conversationId = data?.conversation_id;
+  const action =
+    getDataValue(data, "action") ||
+    (getDataValue(data, "type") === "message" ? "message.created" : "");
+  const offerId =
+    getDataValue(data, "offer_id") || getDataValue(data, "offerId");
+  const conversationId =
+    getDataValue(data, "conversation_id") ||
+    getDataValue(data, "conversationId") ||
+    parseConversationIdFromUrl(getDataValue(data, "url"));
 
   switch (action) {
     case "offer.approved":
@@ -87,7 +142,7 @@ self.addEventListener("push", (event) => {
     }
   }
 
-  const data = payload.data || {};
+  const data = normalizeNestedData(normalizePushData(payload.data));
   const title = payload.title || data.title || "Groopin";
   const body = payload.body || data.body || "";
   const resolvedUrl = resolveNotificationUrl(data);
