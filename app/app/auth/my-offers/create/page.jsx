@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Button from "../../../../../components/ui/button";
 import Checkbox from "../../../../../components/ui/checkbox";
 import Input from "../../../../../components/ui/input";
+import useSupportedInputType from "../../../../../components/ui/input-support";
 import { useI18n } from "../../../../../components/i18n-provider";
 import { apiRequest } from "../../../../lib/api-client";
 
@@ -73,6 +74,26 @@ const normalizeFieldError = (errors, field) => {
 const normalizeQuestionType = (type) =>
   String(type || "").replace("-", "_");
 
+const formatDateForInput = (value, useFallback) => {
+  const trimmed = String(value || "").trim();
+  if (!useFallback) return trimmed;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const [year, month, day] = trimmed.split("-");
+    return `${day}/${month}/${year}`;
+  }
+  return trimmed;
+};
+
+const normalizeDateForApi = (value) => {
+  const trimmed = String(value || "").trim();
+  if (!trimmed) return null;
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
+    const [day, month, year] = trimmed.split("/");
+    return `${year}-${month}-${day}`;
+  }
+  return trimmed;
+};
+
 const parseMultiValue = (value) => {
   if (Array.isArray(value)) {
     return value.map((item) => String(item));
@@ -114,6 +135,14 @@ const formatCategoryLabel = (label) => {
 export default function CreateOfferPage() {
   const router = useRouter();
   const { t } = useI18n();
+  const dateInputType = useSupportedInputType("date");
+  const isDateFallback = dateInputType === "text";
+  const dateFallbackMeta = isDateFallback
+    ? {
+        placeholder: "JJ/MM/AAAA",
+        pattern: "[0-9]{2}/[0-9]{2}/[0-9]{4}"
+      }
+    : {};
   const [categories, setCategories] = useState([]);
   const [cities, setCities] = useState([]);
   const [countryCode, setCountryCode] = useState("");
@@ -242,13 +271,15 @@ export default function CreateOfferPage() {
 
     const finalCategoryId =
       formValues.sub_category_id || formValues.category_id;
+    const normalizedStartDate = normalizeDateForApi(formValues.start_date);
+    const normalizedEndDate = normalizeDateForApi(formValues.end_date);
 
     const payload = {
       title: formValues.title.trim(),
       category_id: finalCategoryId ? Number(finalCategoryId) : null,
-      start_date: formValues.start_date || null,
+      start_date: normalizedStartDate,
       start_time: formValues.start_time || null,
-      end_date: formValues.end_date || null,
+      end_date: normalizedEndDate,
       end_time: formValues.end_time || null,
       city_id: formValues.city_id ? Number(formValues.city_id) : null,
       price: trimmedPrice ? Number(trimmedPrice) : null,
@@ -409,11 +440,17 @@ export default function CreateOfferPage() {
             name="start_date"
             label={renderRequiredLabel(t("offers.start_date"))}
             type="date"
-            value={formValues.start_date}
+            value={formatDateForInput(formValues.start_date, isDateFallback)}
             onChange={(event) => updateField("start_date", event.target.value)}
             error={normalizeFieldError(fieldErrors, "start_date")}
             inputClassName="brand-picker"
-            placeholder={t("offers.start_date_placeholder")}
+            placeholder={
+              isDateFallback
+                ? dateFallbackMeta.placeholder
+                : t("offers.start_date_placeholder")
+            }
+            pattern={isDateFallback ? dateFallbackMeta.pattern : undefined}
+            inputMode={isDateFallback ? "numeric" : undefined}
             required
           />
           <Input
@@ -433,11 +470,17 @@ export default function CreateOfferPage() {
             name="end_date"
             label={renderRequiredLabel(t("offers.end_date"))}
             type="date"
-            value={formValues.end_date}
+            value={formatDateForInput(formValues.end_date, isDateFallback)}
             onChange={(event) => updateField("end_date", event.target.value)}
             error={normalizeFieldError(fieldErrors, "end_date")}
             inputClassName="brand-picker"
-            placeholder={t("offers.end_date_placeholder")}
+            placeholder={
+              isDateFallback
+                ? dateFallbackMeta.placeholder
+                : t("offers.end_date_placeholder")
+            }
+            pattern={isDateFallback ? dateFallbackMeta.pattern : undefined}
+            inputMode={isDateFallback ? "numeric" : undefined}
             required
           />
           <Input
