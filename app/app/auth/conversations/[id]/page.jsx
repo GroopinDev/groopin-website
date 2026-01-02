@@ -16,6 +16,26 @@ const formatDay = (value, locale) => {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString(locale, {
+    month: "short",
+    day: "numeric"
+  });
+};
+
+const formatTime = (value, locale) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString(locale, {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+};
+
+const formatFullDate = (value, locale) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
   const parts = new Intl.DateTimeFormat(locale, {
     day: "2-digit",
     month: "long",
@@ -34,18 +54,8 @@ const formatDay = (value, locale) => {
   }).format(date);
 };
 
-const formatTime = (value, locale) => {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleTimeString(locale, {
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-};
-
 const formatDateTime = (value, locale) => {
-  const day = formatDay(value, locale);
+  const day = formatFullDate(value, locale);
   const time = formatTime(value, locale);
   if (day && time) return `${day}, ${time}`;
   return day || time;
@@ -690,7 +700,7 @@ export default function ConversationPage() {
                           <p className="mt-2 text-[11px] text-secondary-400">
                             {isTemp
                               ? t("Loading more...")
-                              : formatDateTime(message.created_at, dateLocale)}
+                              : formatTime(message.created_at, dateLocale)}
                           </p>
                           {isMine && !isTemp ? (
                           <div className="mt-2 flex justify-end">
@@ -805,10 +815,19 @@ export default function ConversationPage() {
               >
                 <UserAvatar user={user} size={42} withBorder />
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-primary-900">
-                    {user.name ||
-                      `${user.first_name || ""} ${user.last_name || ""}`.trim()}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="truncate text-sm font-semibold text-primary-900">
+                      {user.name ||
+                        `${user.first_name || ""} ${
+                          user.last_name || ""
+                        }`.trim()}
+                    </p>
+                    {offerOwnerId && Number(user.id) === Number(offerOwnerId) ? (
+                      <span className="rounded-full bg-[#F7F1FA] px-2 py-0.5 text-[10px] font-semibold text-secondary-600">
+                        {t("Organizer")}
+                      </span>
+                    ) : null}
+                  </div>
                   {user.last_read_at ? (
                     <p className="text-xs text-secondary-400">
                       {formatReadStamp(user.last_read_at)}

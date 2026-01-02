@@ -6,9 +6,6 @@ import Image from "next/image";
 const getBgColor = () => "#B12587";
 
 export default function UserAvatar({ user, size = 60, withBorder = false }) {
-  const isDefaultAvatar =
-    user?.uses_default_image === true ||
-    Number(user?.uses_default_image) === 1;
   const avatarUrl =
     user?.avatar_image_url ||
     user?.avatar_url ||
@@ -16,13 +13,14 @@ export default function UserAvatar({ user, size = 60, withBorder = false }) {
     user?.image ||
     user?.profile_image_url ||
     user?.profile_image;
+  const hasAvatar = Boolean(avatarUrl);
   const initials =
     (user?.first_name?.[0] || "U") + (user?.last_name?.[0] || "");
   const safeAvatarUrl = avatarUrl?.includes("ui-avatars.com/api")
     ? `${avatarUrl}${avatarUrl.includes("?") ? "&" : "?"}format=png`
     : avatarUrl;
 
-  if (isDefaultAvatar || !avatarUrl) {
+  if (!hasAvatar) {
     return (
       <div
         className={`flex items-center justify-center rounded-full text-white ${

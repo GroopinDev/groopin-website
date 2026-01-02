@@ -24,10 +24,7 @@ export default function UsersAvatarsList({ users = [], lastItemText }) {
               user?.image ||
               user?.profile_image_url ||
               user?.profile_image;
-            const usesDefaultImage =
-              user?.uses_default_image === true ||
-              Number(user?.uses_default_image) === 1;
-            if (!usesDefaultImage && avatarUrl) {
+            if (avatarUrl) {
               return (
             <Image
               src={avatarUrl}
