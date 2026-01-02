@@ -14,12 +14,12 @@ import { getUser } from "../../../../lib/session";
 
 const reactionOptions = ["❤️", "😂", "👍", "😮", "😢", "👏"];
 const nameColorClasses = [
-  "text-secondary-600",
-  "text-primary-700",
-  "text-[#B12587]",
-  "text-[#1F7A7A]",
-  "text-[#AA4B2A]",
-  "text-[#3B5BDB]"
+  "text-[#1D4ED8]",
+  "text-[#0F766E]",
+  "text-[#B45309]",
+  "text-[#B91C1C]",
+  "text-[#15803D]",
+  "text-[#0E7490]"
 ];
 
 const formatDay = (value, locale) => {
@@ -925,7 +925,7 @@ export default function ConversationPage() {
                             }
                           >
                             {!isMine ? (
-                              <span className="pointer-events-none absolute -left-2 top-5 h-4 w-4 rotate-45 rounded-sm bg-[#F4F4F5] shadow-sm" />
+                              <span className="pointer-events-none absolute -left-2 top-4 h-0 w-0 border-y-[6px] border-r-[10px] border-y-transparent border-r-[#F4F4F5]" />
                             ) : null}
                             {message.reply_to ? (
                               <div
@@ -951,29 +951,33 @@ export default function ConversationPage() {
                             <p className="mt-1 text-sm leading-relaxed">
                               {message.content}
                             </p>
-                            <p className="mt-2 text-[11px] text-secondary-400">
-                              {isTemp
-                                ? t("Loading more...")
-                                : formatTime(message.created_at, dateLocale)}
-                            </p>
-                            {isMine && !isTemp ? (
-                            <div className="mt-2 flex justify-end">
-                              <span
-                                className={`relative inline-flex h-3 w-5 items-center justify-center ${getSeenToneClass(message.id)}`}
-                              >
+                            <div
+                              className={`mt-2 flex items-center ${
+                                isMine ? "justify-end gap-2" : "justify-start"
+                              } text-[11px] text-secondary-400`}
+                            >
+                              <span>
+                                {isTemp
+                                  ? t("Loading more...")
+                                  : formatTime(message.created_at, dateLocale)}
+                              </span>
+                              {isMine && !isTemp ? (
+                                <span
+                                  className={`relative inline-flex h-4 w-6 items-center justify-center ${getSeenToneClass(message.id)}`}
+                                >
                                   <CheckIcon
-                                    size={14}
+                                    size={16}
                                     strokeWidth={2.4}
                                     className={getSeenToneClass(message.id)}
                                   />
                                   <CheckIcon
-                                    size={14}
+                                    size={16}
                                     strokeWidth={2.4}
-                                    className={`${getSeenToneClass(message.id)} absolute left-[6px]`}
+                                    className={`${getSeenToneClass(message.id)} absolute left-[8px]`}
                                   />
                                 </span>
-                              </div>
-                            ) : null}
+                              ) : null}
+                            </div>
                           </div>
                         </div>
                       </div>
