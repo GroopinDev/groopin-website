@@ -1,18 +1,20 @@
 {
   "name": "Groopin",
   "short_name": "Groopin",
+  "start_url": "/app/guest/login",
+  "scope": "/app/",
   "icons": [
     {
       "src": "/assets/favicon/web-app-manifest-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     },
     {
       "src": "/assets/favicon/web-app-manifest-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ],
   "theme_color": "#ffffff",

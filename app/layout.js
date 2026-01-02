@@ -34,6 +34,11 @@ export const metadata = {
         url: "/assets/favicon/site.webmanifest"
       }
     ]
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Groopin",
+    statusBarStyle: "black-translucent"
   }
 };
 
