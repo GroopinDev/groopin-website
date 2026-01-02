@@ -1776,13 +1776,13 @@ export default function ConversationPage() {
               <button
                 type="button"
                 onClick={addPollOption}
-                className="text-xs font-semibold text-secondary-600"
+                className="text-xs font-semibold text-secondary-500 transition hover:text-secondary-600"
               >
                 {t("poll.add_option")}
               </button>
             ) : null}
           </div>
-          <div className="space-y-2 text-sm text-secondary-600">
+          <div className="space-y-2 text-sm text-secondary-500">
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -1809,7 +1809,7 @@ export default function ConversationPage() {
             <button
               type="button"
               onClick={closePollModal}
-              className="h-11 w-full rounded-full border border-secondary-500 px-4 text-sm font-semibold text-secondary-600 transition hover:bg-secondary-500/10"
+              className="h-11 w-full rounded-full border border-secondary-500 px-4 text-sm font-semibold text-secondary-500 transition hover:bg-secondary-500/10"
               disabled={pollState === "sending"}
             >
               {t("Cancel")}
