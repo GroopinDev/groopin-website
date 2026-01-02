@@ -754,13 +754,13 @@ export default function ConversationPage() {
               <div ref={bottomRef} />
             </div>
           ) : null}
+          {typingLabel ? (
+            <div className="sticky bottom-0 z-10 bg-white/80 px-1 py-1 text-xs text-secondary-400">
+              {typingLabel}
+            </div>
+          ) : null}
         </div>
       </div>
-      {typingLabel ? (
-        <div className="px-2 text-xs font-semibold text-primary-900">
-          {typingLabel}
-        </div>
-      ) : null}
 
       <form
         onSubmit={handleSend}
