@@ -1430,6 +1430,11 @@ export default function ConversationPage() {
                             } ${!isMine ? "ml-3" : ""} ${
                               isHighlighted ? "ring-2 ring-secondary-300" : ""
                             } relative`}
+                            style={{
+                              WebkitUserSelect: "none",
+                              userSelect: "none",
+                              WebkitTouchCallout: "none"
+                            }}
                             onMouseDown={
                               allowActions
                                 ? () => startLongPress(message)
