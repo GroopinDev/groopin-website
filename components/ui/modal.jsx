@@ -29,7 +29,7 @@ export default function Modal({
       onClick={() => onClose?.()}
     >
       <div
-        className="w-full max-w-lg max-h-[calc(100dvh-3rem)] rounded-3xl bg-white p-6 shadow-xl"
+        className="modal-content w-full max-w-lg max-h-[calc(100dvh-3rem)] rounded-3xl bg-white p-6 shadow-xl"
         onClick={(event) => event.stopPropagation()}
       >
         {title ? (

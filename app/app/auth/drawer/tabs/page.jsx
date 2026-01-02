@@ -6,9 +6,7 @@ import Link from "next/link";
 import OfferCard from "../../../../../components/offers/offer-card";
 import Button from "../../../../../components/ui/button";
 import Modal from "../../../../../components/ui/modal";
-import useSupportedInputType, {
-  getFallbackMeta
-} from "../../../../../components/ui/input-support";
+import { getFallbackMeta } from "../../../../../components/ui/input-support";
 import { PlusIcon } from "../../../../../components/ui/heroicons";
 import { useI18n } from "../../../../../components/i18n-provider";
 import { apiRequest } from "../../../../lib/api-client";
@@ -153,9 +151,7 @@ export default function TabsHomePage() {
   const [searchValue, setSearchValue] = useState("");
   const user = getUser();
   const latestOfferRequestRef = useRef(0);
-  const dateInputType = useSupportedInputType("date");
-  const dateFallbackMeta =
-    dateInputType === "text" ? getFallbackMeta("date") : {};
+  const dateFallbackMeta = getFallbackMeta("date");
 
   const [filters, setFilters] = useState({
     title: "",
@@ -495,7 +491,7 @@ export default function TabsHomePage() {
         open={isFilterOpen}
         onClose={() => setFilterOpen(false)}
       >
-        <div className="max-h-[70vh] space-y-5 overflow-y-auto pr-2">
+        <div className="space-y-5 pr-2">
           <div className="flex items-center justify-end">
             <button
               type="button"
@@ -657,12 +653,10 @@ export default function TabsHomePage() {
               <label className="space-y-1 text-sm font-semibold text-primary-900">
                 <span>{t("Start date")}</span>
                 <input
-                  type={dateInputType}
+                  type="text"
                   value={localFilters.start_date_between?.[0] ?? ""}
                   onChange={(event) => updateDateRange(0, event.target.value)}
-                  inputMode={
-                    dateInputType === "text" ? "numeric" : undefined
-                  }
+                  inputMode="numeric"
                   placeholder={dateFallbackMeta.placeholder}
                   pattern={dateFallbackMeta.pattern}
                   className="w-full rounded-2xl border border-[#EADAF1] px-3 py-2 text-sm text-secondary-600"
@@ -671,12 +665,10 @@ export default function TabsHomePage() {
               <label className="space-y-1 text-sm font-semibold text-primary-900">
                 <span>{t("End date")}</span>
                 <input
-                  type={dateInputType}
+                  type="text"
                   value={localFilters.start_date_between?.[1] ?? ""}
                   onChange={(event) => updateDateRange(1, event.target.value)}
-                  inputMode={
-                    dateInputType === "text" ? "numeric" : undefined
-                  }
+                  inputMode="numeric"
                   placeholder={dateFallbackMeta.placeholder}
                   pattern={dateFallbackMeta.pattern}
                   className="w-full rounded-2xl border border-[#EADAF1] px-3 py-2 text-sm text-secondary-600"
