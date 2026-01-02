@@ -61,6 +61,21 @@ const formatDateTime = (value, locale) => {
   return day || time;
 };
 
+const buildDayKey = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (!Number.isNaN(date.getTime())) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+  if (typeof value === "string") {
+    return value.split("T")[0].split(" ")[0];
+  }
+  return "";
+};
+
 export default function ConversationPage() {
   const params = useParams();
   const router = useRouter();
@@ -620,7 +635,7 @@ export default function ConversationPage() {
               {(() => {
                 let lastDate = "";
                 return sortedMessages.map((message) => {
-                  const dateKey = message?.created_at?.split("T")[0] || "";
+                  const dateKey = buildDayKey(message?.created_at);
                   const showDate = dateKey && dateKey !== lastDate;
                   if (showDate) {
                     lastDate = dateKey;
