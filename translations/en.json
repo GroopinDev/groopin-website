@@ -28,6 +28,7 @@
   "Blocking user": "⚠️ Blocking user",
   "Budget": "Budget",
   "Budget not specified": "Budget not specified",
+  "Le budget doit être renseigné en chiffres.": "Budget must be entered using numbers.",
   "Can not edit if there is more than one participant": "You can not edit the offer if there is one or more participants in the offer",
   "Cancel": "Cancel",
   "Cancel request": "Cancel request",

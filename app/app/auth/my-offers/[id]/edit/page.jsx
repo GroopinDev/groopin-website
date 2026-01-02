@@ -97,6 +97,9 @@ const parseMultiValue = (value) => {
   return [String(value)];
 };
 
+const normalizeNumericInput = (value) =>
+  String(value || "").replace(/[^\d]/g, "");
+
 const normalizeDynamicAnswers = (answers) => {
   if (!answers || typeof answers !== "object") return {};
   return Object.entries(answers).reduce((acc, [key, value]) => {
@@ -498,43 +501,32 @@ export default function EditMyOfferPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-1">
-          <label className="mb-1 block text-lg text-primary-500">
-            {renderRequiredLabel(t("offers.city"))}
-          </label>
-          <select
-            value={formValues.city_id}
-            onChange={(event) => updateField("city_id", event.target.value)}
-            className={`w-full min-h-[52px] rounded-full border-2 px-4 py-3 text-base leading-6 text-secondary-400 outline-none focus:border-primary-500 ${
-              normalizeFieldError(fieldErrors, "city_id")
-                ? "border-danger-600"
-                : "border-[#EADAF1]"
-            }`}
-            required
-          >
-            <option value="">{t("offers.city_placeholder")}</option>
-            {cities.map((city) => (
-              <option key={city.id} value={city.id}>
-                {city.name}
-              </option>
-            ))}
-          </select>
-          {normalizeFieldError(fieldErrors, "city_id") ? (
-            <p className="text-sm text-danger-600">
-              {normalizeFieldError(fieldErrors, "city_id")}
-            </p>
-          ) : null}
-        </div>
-        <Input
-          name="price"
-          label={t("offers.price")}
-          type="number"
-          value={formValues.price}
-          onChange={(event) => updateField("price", event.target.value)}
-          error={normalizeFieldError(fieldErrors, "price")}
-          placeholder={t("offers.price_placeholder")}
-        />
+      <div className="space-y-1">
+        <label className="mb-1 block text-lg text-primary-500">
+          {renderRequiredLabel(t("offers.city"))}
+        </label>
+        <select
+          value={formValues.city_id}
+          onChange={(event) => updateField("city_id", event.target.value)}
+          className={`w-full min-h-[52px] rounded-full border-2 px-4 py-3 text-base leading-6 text-secondary-400 outline-none focus:border-primary-500 ${
+            normalizeFieldError(fieldErrors, "city_id")
+              ? "border-danger-600"
+              : "border-[#EADAF1]"
+          }`}
+          required
+        >
+          <option value="">{t("offers.city_placeholder")}</option>
+          {cities.map((city) => (
+            <option key={city.id} value={city.id}>
+              {city.name}
+            </option>
+          ))}
+        </select>
+        {normalizeFieldError(fieldErrors, "city_id") ? (
+          <p className="text-sm text-danger-600">
+            {normalizeFieldError(fieldErrors, "city_id")}
+          </p>
+        ) : null}
       </div>
 
       <Input
@@ -545,6 +537,20 @@ export default function EditMyOfferPage() {
         error={normalizeFieldError(fieldErrors, "address")}
         placeholder={t("offers.address_placeholder")}
         required
+      />
+
+      <Input
+        name="price"
+        label={t("offers.price")}
+        type="number"
+        value={formValues.price}
+        onChange={(event) =>
+          updateField("price", normalizeNumericInput(event.target.value))
+        }
+        error={normalizeFieldError(fieldErrors, "price")}
+        placeholder={t("offers.price_placeholder")}
+        inputMode="numeric"
+        pattern="[0-9]*"
       />
 
       <Input
