@@ -95,6 +95,7 @@ export default function ConversationPage() {
   const [isInfoModalOpen, setInfoModalOpen] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [replyToMessage, setReplyToMessage] = useState(null);
+  const [highlightedMessageId, setHighlightedMessageId] = useState(null);
   const currentUser = getUser();
   const currentUserId =
     currentUser?.id !== null && currentUser?.id !== undefined
@@ -102,6 +103,7 @@ export default function ConversationPage() {
       : null;
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
+  const messageRefs = useRef(new Map());
   const firstScrollRef = useRef(true);
   const messagesRef = useRef([]);
   const longPressTimeoutRef = useRef(null);
@@ -442,6 +444,30 @@ export default function ConversationPage() {
     if (trimmed.length <= 80) return trimmed;
     return `${trimmed.slice(0, 80)}...`;
   };
+
+  const setMessageRef = (messageId) => (node) => {
+    if (!messageId) return;
+    if (node) {
+      messageRefs.current.set(messageId, node);
+    } else {
+      messageRefs.current.delete(messageId);
+    }
+  };
+
+  const scrollToMessage = (messageId) => {
+    const node = messageRefs.current.get(messageId);
+    if (!node) return;
+    node.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightedMessageId(messageId);
+  };
+
+  useEffect(() => {
+    if (!highlightedMessageId) return undefined;
+    const timeout = setTimeout(() => {
+      setHighlightedMessageId(null);
+    }, 1500);
+    return () => clearTimeout(timeout);
+  }, [highlightedMessageId]);
 
   useEffect(() => {
     if (!bottomRef.current) return;
@@ -785,9 +811,15 @@ export default function ConversationPage() {
                   const reactions = Array.isArray(message?.reactions)
                     ? message.reactions
                     : [];
+                  const isHighlighted =
+                    Number(message?.id) === Number(highlightedMessageId);
                   if (message?.automatic) {
                     return (
-                      <div key={message.id} className="space-y-2">
+                      <div
+                        key={message.id}
+                        ref={setMessageRef(message.id)}
+                        className="space-y-2"
+                      >
                         {showDate ? (
                           <div className="flex justify-center">
                             <span className="rounded-full bg-[#F7F1FA] px-3 py-1 text-xs text-secondary-500">
@@ -805,7 +837,11 @@ export default function ConversationPage() {
                   }
 
                   return (
-                    <div key={message.id} className="space-y-2">
+                    <div
+                      key={message.id}
+                      ref={setMessageRef(message.id)}
+                      className="space-y-2"
+                    >
                       {showDate ? (
                         <div className="flex justify-center">
                             <span className="rounded-full bg-[#F7F1FA] px-3 py-1 text-xs text-secondary-500">
@@ -814,37 +850,39 @@ export default function ConversationPage() {
                           </div>
                         ) : null}
                       <div
-                        className={`flex items-end gap-2 ${
+                        className={`flex items-end ${
                           isMine ? "justify-end" : "justify-start"
                         }`}
                       >
-                        {!isMine ? (
-                          <UserAvatar
-                            user={message.user}
-                            size={36}
-                            withBorder
-                          />
-                        ) : null}
                         <div
                           className={`flex max-w-[75%] flex-col ${
                             isMine ? "items-end" : "items-start"
                           }`}
                         >
                           {!isMine ? (
-                            <p className="text-xs font-semibold text-primary-900">
-                              {getUserDisplayName(message.user)}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <UserAvatar
+                                user={message.user}
+                                size={26}
+                                withBorder
+                              />
+                              <p className="text-xs font-semibold text-primary-900">
+                                {getUserDisplayName(message.user)}
+                              </p>
+                            </div>
                           ) : null}
                           <div
                             className={`w-full rounded-2xl px-4 py-3 text-sm shadow-sm ${
                               isMine
                                 ? "bg-[#EADAF1] text-primary-900 rounded-br-sm"
                                 : "bg-[#F4F4F5] text-secondary-700 rounded-bl-sm"
-                            } ${isTemp ? "opacity-70" : ""}`}
+                            } ${isTemp ? "opacity-70" : ""} ${
+                              isHighlighted ? "ring-2 ring-secondary-300" : ""
+                            }`}
                             onMouseDown={
                               allowActions
                                 ? () => startLongPress(message)
-                                : undefined
+                              : undefined
                             }
                             onMouseUp={allowActions ? cancelLongPress : undefined}
                             onMouseLeave={allowActions ? cancelLongPress : undefined}
@@ -870,7 +908,12 @@ export default function ConversationPage() {
                                   isMine
                                     ? "border-secondary-500 bg-white/60 text-secondary-700"
                                     : "border-secondary-400 bg-white/80 text-secondary-600"
-                                }`}
+                                } cursor-pointer`}
+                                role="button"
+                                tabIndex={0}
+                                onClick={() =>
+                                  scrollToMessage(message.reply_to.id)
+                                }
                               >
                                 <p className="font-semibold">
                                   {getUserDisplayName(message.reply_to.user)}
@@ -913,7 +956,7 @@ export default function ConversationPage() {
                         <div
                           className={`flex flex-wrap gap-1 ${
                             isMine ? "justify-end" : "justify-start"
-                          } ${isMine ? "" : "pl-10"}`}
+                          }`}
                         >
                           {reactions.map((reaction) => {
                             const isMineReaction =
