@@ -15,6 +15,7 @@ export default function Input({
   placeholder,
   inputMode,
   pattern,
+  rightAddon,
   ...props
 }) {
   const [focused, setFocused] = useState(false);
@@ -37,10 +38,12 @@ export default function Input({
       {label ? (
         <label className="mb-1 block text-lg text-primary-500">{label}</label>
       ) : null}
-      <div className={`rounded-full border-2 px-4 py-3 ${borderColor}`}>
+      <div
+        className={`flex items-center gap-3 rounded-full border-2 px-4 py-3 ${borderColor}`}
+      >
         <input
           type={resolvedType}
-          className={`w-full bg-transparent text-secondary-400 outline-none placeholder:text-neutral-400 ${inputClassName}`}
+          className={`flex-1 bg-transparent text-secondary-400 outline-none placeholder:text-neutral-400 ${inputClassName}`}
           placeholder={resolvedPlaceholder}
           inputMode={resolvedInputMode}
           pattern={resolvedPattern}
@@ -54,6 +57,7 @@ export default function Input({
           }}
           {...props}
         />
+        {rightAddon ? rightAddon : null}
       </div>
       {error ? (
         <p className="mt-2 text-sm text-danger-600">{error}</p>
