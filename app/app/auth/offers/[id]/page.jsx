@@ -475,6 +475,9 @@ export default function OfferDetailsPage() {
   const participantsHref = isOwner
     ? `/app/auth/my-offers/${offer.id}/participants`
     : `/app/auth/offers/${offer.id}/participants`;
+  const participantsActionLabel = isOwner
+    ? t("Participants information")
+    : t("View participants");
   const participantsList = offer?.participants || [];
   const ownerParticipant = participantsList.find(
     (user) => user.id === offer?.owner?.id
@@ -1167,7 +1170,7 @@ export default function OfferDetailsPage() {
                       onClick={() => setParticipantsOpen(true)}
                       className="mt-3 inline-flex items-center rounded-full bg-secondary-500 px-3 py-2 text-[10px] font-semibold text-white"
                     >
-                      {t("Participants information")}
+                      {participantsActionLabel}
                     </button>
                 ) : (
                   <p className="mt-3 text-xs text-secondary-400">
@@ -1635,7 +1638,7 @@ export default function OfferDetailsPage() {
           />
           {participantCount > 0 ? (
             <Link href={participantsHref} className="w-full">
-              <Button label={t("Participants information")} className="w-full" />
+              <Button label={participantsActionLabel} className="w-full" />
             </Link>
           ) : null}
         </div>
