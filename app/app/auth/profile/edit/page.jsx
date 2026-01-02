@@ -761,32 +761,61 @@ export default function ProfileEditPage() {
               }
 
               if (questionType === "multi_select") {
+                const options = question.formatted_settings?.options || [];
+                const optionLabelByValue = new Map(
+                  options.map((option) => [String(option.value), option.label])
+                );
+                const selectedValues = Array.isArray(questionValue)
+                  ? questionValue
+                  : parseMultiValue(questionValue);
                 return (
                   <div key={question.id} className="space-y-1">
                     <label className="mb-1 block text-lg text-primary-500">
                       {question.label}
                     </label>
                     <select
-                      multiple
-                      value={questionValue}
+                      value=""
                       onChange={(event) => {
-                        const selectedValues = Array.from(
-                          event.target.selectedOptions
-                        ).map((option) => option.value);
-                        updateDynamicQuestion(question.name, selectedValues);
+                        const value = String(event.target.value || "");
+                        if (!value || selectedValues.includes(value)) return;
+                        updateDynamicQuestion(question.name, [
+                          ...selectedValues,
+                          value
+                        ]);
                       }}
-                      className={`w-full rounded-2xl border-2 px-4 py-3 text-secondary-400 outline-none focus:border-primary-500 ${
+                      className={`min-h-[52px] w-full rounded-full border-2 px-4 py-3 text-base leading-6 text-secondary-400 outline-none focus:border-primary-500 ${
                         error ? "border-danger-600" : "border-[#EADAF1]"
                       }`}
                     >
-                      {(question.formatted_settings?.options || []).map(
-                        (option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        )
-                      )}
+                      <option value="">{t("offers.multi_select_placeholder")}</option>
+                      {options.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
                     </select>
+                    {selectedValues.length ? (
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        {selectedValues.map((value) => (
+                          <button
+                            key={`selected-${question.id}-${value}`}
+                            type="button"
+                            onClick={() =>
+                              updateDynamicQuestion(
+                                question.name,
+                                selectedValues.filter((item) => item !== value)
+                              )
+                            }
+                            className="flex min-h-[34px] items-center gap-2 rounded-full border border-secondary-500 bg-secondary-500 px-3 py-1.5 text-sm font-semibold text-white"
+                          >
+                            <span>
+                              {optionLabelByValue.get(value) || value}
+                            </span>
+                            <span className="text-xs">x</span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
                     {error ? (
                       <p className="mt-2 text-sm text-danger-600">{error}</p>
                     ) : null}
