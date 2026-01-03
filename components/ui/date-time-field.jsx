@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import DatePicker from "react-datepicker";
 
 const pad = (value) => String(value).padStart(2, "0");
@@ -61,6 +62,11 @@ const variants = {
   }
 };
 
+const BodyPortal = ({ children }) => {
+  if (typeof document === "undefined") return children;
+  return createPortal(children, document.body);
+};
+
 export default function DateTimeField({
   label,
   error,
@@ -91,6 +97,7 @@ export default function DateTimeField({
   const config = variants[variant] || variants.default;
   const showYearSelect = showYearDropdown && !isTime;
   const showMonthSelect = showMonthDropdown && !isTime;
+  const useBodyPortal = isTime && !isNarrowScreen;
   const popperProps = {
     strategy: "fixed",
     ...(popperPropsOverride || {})
@@ -171,6 +178,7 @@ export default function DateTimeField({
             }
           ]}
           popperProps={popperProps}
+          popperContainer={useBodyPortal ? BodyPortal : undefined}
           withPortal={isNarrowScreen}
           showTimeSelect={isTime}
           showTimeSelectOnly={isTime}
