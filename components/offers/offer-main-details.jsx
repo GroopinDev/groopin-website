@@ -40,6 +40,13 @@ const formatTime = (value) => {
   return value;
 };
 
+const resolveCurrency = (offer) => {
+  const explicit = String(offer?.currency || "").trim();
+  if (explicit) return explicit;
+  const country = String(offer?.city?.country_code || "").toUpperCase();
+  return country === "FR" ? "EUR" : "MAD";
+};
+
 const iconProps = { size: 14, className: "text-secondary-500", strokeWidth: 1.5 };
 
 export default function OfferMainDetails({ offer, enablePlacePreview = false }) {
@@ -72,8 +79,9 @@ export default function OfferMainDetails({ offer, enablePlacePreview = false }) 
   const timeLabel = formatTime(offer?.start_time);
   const endDateLabel = formatDate(offer?.end_date, dateLocale);
   const endTimeLabel = formatTime(offer?.end_time);
+  const currency = resolveCurrency(offer);
   const priceLabel = offer?.price
-    ? `${offer.price} MAD`
+    ? `${offer.price} ${currency}`
     : t("Budget not specified");
   const showStartTime = timeLabel && timeLabel !== "-";
   const showEndTime = endTimeLabel && endTimeLabel !== "-";
