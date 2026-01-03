@@ -98,6 +98,11 @@ export default function RegisterPage() {
           label={t("date_of_birth")}
           value={dateOfBirth}
           onChange={setDateOfBirth}
+          showYearDropdown
+          showMonthDropdown
+          scrollableYearDropdown
+          yearDropdownItemNumber={100}
+          dropdownMode="select"
         />
         <Input name="password" label={t("Password")} type="password" required />
         <Input

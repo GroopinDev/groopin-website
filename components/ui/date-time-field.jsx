@@ -77,12 +77,24 @@ export default function DateTimeField({
   timeIntervals = 15,
   onFocus,
   onBlur,
+  showYearDropdown = false,
+  showMonthDropdown = false,
+  yearDropdownItemNumber = 100,
+  scrollableYearDropdown = false,
+  dropdownMode = "select",
+  popperProps: popperPropsOverride,
   ...props
 }) {
   const [focused, setFocused] = useState(false);
   const [isNarrowScreen, setIsNarrowScreen] = useState(false);
   const isTime = type === "time";
   const config = variants[variant] || variants.default;
+  const showYearSelect = showYearDropdown && !isTime;
+  const showMonthSelect = showMonthDropdown && !isTime;
+  const popperProps = {
+    strategy: "fixed",
+    ...(popperPropsOverride || {})
+  };
   const selected = useMemo(
     () => (isTime ? parseTimeValue(value) : parseDateValue(value)),
     [isTime, value]
@@ -158,12 +170,22 @@ export default function DateTimeField({
               options: { fallbackPlacements: ["top-start", "bottom-start"] }
             }
           ]}
+          popperProps={popperProps}
           withPortal={isNarrowScreen}
           showTimeSelect={isTime}
           showTimeSelectOnly={isTime}
           timeIntervals={timeIntervals}
           timeFormat="HH:mm"
           dateFormat={isTime ? "HH:mm" : "dd/MM/yyyy"}
+          showYearDropdown={showYearSelect}
+          showMonthDropdown={showMonthSelect}
+          yearDropdownItemNumber={
+            showYearSelect ? yearDropdownItemNumber : undefined
+          }
+          scrollableYearDropdown={
+            showYearSelect ? scrollableYearDropdown : undefined
+          }
+          dropdownMode={showYearSelect || showMonthSelect ? dropdownMode : undefined}
           placeholderText={placeholder}
           className={`${config.input} ${inputClassName}`}
           wrapperClassName="min-w-0 flex-1"

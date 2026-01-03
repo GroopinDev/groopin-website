@@ -695,6 +695,11 @@ export default function ProfileEditPage() {
           value={formValues.date_of_birth || ""}
           onChange={(value) => updateField("date_of_birth", value)}
           error={normalizeFieldError(fieldErrors, "date_of_birth")}
+          showYearDropdown
+          showMonthDropdown
+          scrollableYearDropdown
+          yearDropdownItemNumber={100}
+          dropdownMode="select"
         />
 
         {dynamicQuestions.length > 0 ? (
