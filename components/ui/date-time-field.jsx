@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import DatePicker from "react-datepicker";
 
 const pad = (value) => String(value).padStart(2, "0");
@@ -49,14 +49,14 @@ const variants = {
     label: "mb-1 block text-lg text-primary-500",
     container: "flex items-center gap-3 rounded-full border-2 px-4 py-3",
     input:
-      "flex-1 bg-transparent text-secondary-400 outline-none placeholder:text-neutral-400",
+      "min-w-0 flex-1 truncate bg-transparent text-secondary-400 outline-none placeholder:text-neutral-400",
     error: "mt-2 text-sm text-danger-600"
   },
   compact: {
     label: "text-sm font-semibold text-primary-900",
     container: "flex items-center gap-2 rounded-2xl border px-3 py-2",
     input:
-      "w-full bg-transparent text-sm text-secondary-600 outline-none placeholder:text-neutral-400",
+      "min-w-0 w-full truncate bg-transparent text-sm text-secondary-600 outline-none placeholder:text-neutral-400",
     error: "mt-2 text-xs text-danger-600"
   }
 };
@@ -80,6 +80,7 @@ export default function DateTimeField({
   ...props
 }) {
   const [focused, setFocused] = useState(false);
+  const [isNarrowScreen, setIsNarrowScreen] = useState(false);
   const isTime = type === "time";
   const config = variants[variant] || variants.default;
   const selected = useMemo(
@@ -91,6 +92,19 @@ export default function DateTimeField({
     : focused
       ? "border-primary-500"
       : "border-[#EADAF1]";
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const media = window.matchMedia("(max-width: 640px)");
+    const update = () => setIsNarrowScreen(media.matches);
+    update();
+    if (media.addEventListener) {
+      media.addEventListener("change", update);
+      return () => media.removeEventListener("change", update);
+    }
+    media.addListener(update);
+    return () => media.removeListener(update);
+  }, []);
 
   const handleChange = (date) => {
     if (!onChange) return;
@@ -132,6 +146,19 @@ export default function DateTimeField({
             setFocused(false);
             onBlur?.(event);
           }}
+          popperPlacement="bottom-start"
+          popperModifiers={[
+            { name: "offset", options: { offset: [0, 8] } },
+            {
+              name: "preventOverflow",
+              options: { rootBoundary: "viewport", padding: 8 }
+            },
+            {
+              name: "flip",
+              options: { fallbackPlacements: ["top-start", "bottom-start"] }
+            }
+          ]}
+          withPortal={isNarrowScreen}
           showTimeSelect={isTime}
           showTimeSelectOnly={isTime}
           timeIntervals={timeIntervals}

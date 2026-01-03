@@ -333,3 +333,12 @@ body {
 .react-datepicker-popper {
   z-index: 50;
 }
+
+.react-datepicker__portal {
+  background-color: rgba(30, 30, 30, 0.45);
+}
+
+.react-datepicker__portal .react-datepicker {
+  max-width: 92vw;
+  width: 100%;
+}
