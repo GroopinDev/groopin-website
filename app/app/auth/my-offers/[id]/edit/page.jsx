@@ -111,6 +111,11 @@ const parseMultiValue = (value) => {
 
 const isDigitsOnly = (value) => /^\d+$/.test(value);
 
+const currencyByCountry = {
+  MA: "MAD",
+  FR: "EUR"
+};
+
 const normalizeDynamicAnswers = (answers) => {
   if (!answers || typeof answers !== "object") return {};
   return Object.entries(answers).reduce((acc, [key, value]) => {
@@ -270,6 +275,20 @@ export default function EditMyOfferPage() {
         (city.country_code || "MA").toUpperCase() === countryCode
     );
   }, [cities, countryCode]);
+  const resolvedCountryCode = useMemo(() => {
+    if (countryCode) return countryCode.toUpperCase();
+    if (formValues.city_id) {
+      const city = cities.find(
+        (item) => String(item.id) === String(formValues.city_id)
+      );
+      if (city?.country_code) {
+        return String(city.country_code).toUpperCase();
+      }
+    }
+    return "MA";
+  }, [cities, countryCode, formValues.city_id]);
+  const currencyLabel =
+    currencyByCountry[resolvedCountryCode] || currencyByCountry.MA;
   const isDraft = Boolean(offer?.is_draft) || offer?.status === "draft";
   const isTicketingLocked = (offer?.participants_count || 0) > 1;
   const isActionDisabled =
@@ -680,6 +699,11 @@ export default function EditMyOfferPage() {
         }}
         error={normalizeFieldError(fieldErrors, "price")}
         placeholder={t("offers.price_placeholder")}
+        rightAddon={
+          <span className="text-sm font-semibold text-secondary-400">
+            {currencyLabel}
+          </span>
+        }
         inputMode="numeric"
         pattern="[0-9]*"
       />

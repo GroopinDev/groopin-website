@@ -111,6 +111,11 @@ const parseMultiValue = (value) => {
 
 const isDigitsOnly = (value) => /^\d+$/.test(value);
 
+const currencyByCountry = {
+  MA: "MAD",
+  FR: "EUR"
+};
+
 const formatCategoryLabel = (label) => {
   if (!label) return "";
   const normalized = label.toLowerCase();
@@ -195,6 +200,20 @@ export default function CreateOfferPage() {
         (city.country_code || "MA").toUpperCase() === countryCode
     );
   }, [cities, countryCode]);
+  const resolvedCountryCode = useMemo(() => {
+    if (countryCode) return countryCode.toUpperCase();
+    if (formValues.city_id) {
+      const city = cities.find(
+        (item) => String(item.id) === String(formValues.city_id)
+      );
+      if (city?.country_code) {
+        return String(city.country_code).toUpperCase();
+      }
+    }
+    return "MA";
+  }, [cities, countryCode, formValues.city_id]);
+  const currencyLabel =
+    currencyByCountry[resolvedCountryCode] || currencyByCountry.MA;
 
   useEffect(() => {
     if (!cities.length || countryCode) return;
@@ -584,6 +603,11 @@ export default function CreateOfferPage() {
         }}
         error={normalizeFieldError(fieldErrors, "price")}
         placeholder={t("offers.price_placeholder")}
+        rightAddon={
+          <span className="text-sm font-semibold text-secondary-400">
+            {currencyLabel}
+          </span>
+        }
         inputMode="numeric"
         pattern="[0-9]*"
       />
