@@ -98,6 +98,7 @@ export default function DateTimeField({
   const showYearSelect = showYearDropdown && !isTime;
   const showMonthSelect = showMonthDropdown && !isTime;
   const useBodyPortal = isTime && !isNarrowScreen;
+  const usePortal = isNarrowScreen || isTime;
   const popperProps = {
     strategy: "fixed",
     ...(popperPropsOverride || {})
@@ -179,7 +180,7 @@ export default function DateTimeField({
           ]}
           popperProps={popperProps}
           popperContainer={useBodyPortal ? BodyPortal : undefined}
-          withPortal={isNarrowScreen}
+          withPortal={usePortal}
           showTimeSelect={isTime}
           showTimeSelectOnly={isTime}
           timeIntervals={timeIntervals}

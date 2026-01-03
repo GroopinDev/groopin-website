@@ -103,6 +103,7 @@ export default function RegisterPage() {
           scrollableYearDropdown
           yearDropdownItemNumber={100}
           dropdownMode="select"
+          maxDate={new Date()}
         />
         <Input name="password" label={t("Password")} type="password" required />
         <Input

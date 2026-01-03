@@ -700,6 +700,7 @@ export default function ProfileEditPage() {
           scrollableYearDropdown
           yearDropdownItemNumber={100}
           dropdownMode="select"
+          maxDate={new Date()}
         />
 
         {dynamicQuestions.length > 0 ? (
