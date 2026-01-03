@@ -3,6 +3,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import DatePicker from "react-datepicker";
+import { arMA, enGB, fr } from "date-fns/locale";
+
+import { useI18n } from "../i18n-provider";
 
 const pad = (value) => String(value).padStart(2, "0");
 
@@ -91,6 +94,7 @@ export default function DateTimeField({
   popperProps: popperPropsOverride,
   ...props
 }) {
+  const { locale } = useI18n();
   const [focused, setFocused] = useState(false);
   const [isNarrowScreen, setIsNarrowScreen] = useState(false);
   const isTime = type === "time";
@@ -99,6 +103,11 @@ export default function DateTimeField({
   const showMonthSelect = showMonthDropdown && !isTime;
   const useBodyPortal = isTime && !isNarrowScreen;
   const usePortal = isNarrowScreen || isTime;
+  const pickerLocale = useMemo(() => {
+    if (locale === "fr") return fr;
+    if (locale === "ar") return arMA;
+    return enGB;
+  }, [locale]);
   const popperProps = {
     strategy: "fixed",
     ...(popperPropsOverride || {})
@@ -178,6 +187,7 @@ export default function DateTimeField({
               options: { fallbackPlacements: ["top-start", "bottom-start"] }
             }
           ]}
+          locale={pickerLocale}
           popperProps={popperProps}
           popperContainer={useBodyPortal ? BodyPortal : undefined}
           withPortal={usePortal}
