@@ -9,6 +9,7 @@ import Input from "../../../../../components/ui/input";
 import useSupportedInputType from "../../../../../components/ui/input-support";
 import { useI18n } from "../../../../../components/i18n-provider";
 import { apiRequest } from "../../../../lib/api-client";
+import PlaceAutocomplete from "../../../../../components/offers/place-autocomplete";
 
 const ioniconCache = new Map();
 
@@ -172,6 +173,7 @@ export default function CreateOfferPage() {
     city_id: "",
     price: "",
     address: "",
+    place_id: "",
     max_participants: "",
     description: "",
     dynamic_questions: {},
@@ -231,6 +233,14 @@ export default function CreateOfferPage() {
     setFormValues((prev) => ({ ...prev, [field]: value }));
   };
 
+  const updateLocation = (address, placeId) => {
+    setFormValues((prev) => ({
+      ...prev,
+      address,
+      place_id: placeId
+    }));
+  };
+
   const updateDynamicQuestion = (name, value) => {
     setFormValues((prev) => ({
       ...prev,
@@ -282,6 +292,8 @@ export default function CreateOfferPage() {
     const normalizedStartDate = normalizeDateForApi(formValues.start_date);
     const normalizedEndDate = normalizeDateForApi(formValues.end_date);
 
+    const trimmedAddress = formValues.address.trim();
+    const placeId = formValues.place_id || null;
     const payload = {
       title: formValues.title.trim(),
       category_id: finalCategoryId ? Number(finalCategoryId) : null,
@@ -291,7 +303,8 @@ export default function CreateOfferPage() {
       end_time: formValues.end_time || null,
       city_id: formValues.city_id ? Number(formValues.city_id) : null,
       price: trimmedPrice ? Number(trimmedPrice) : null,
-      address: formValues.address.trim(),
+      address: placeId ? null : trimmedAddress || null,
+      place_id: placeId,
       max_participants: formValues.max_participants
         ? Number(formValues.max_participants)
         : null,
@@ -577,15 +590,36 @@ export default function CreateOfferPage() {
         ) : null}
       </div>
 
-      <Input
-        name="address"
-        label={renderRequiredLabel(t("offers.address"))}
-        value={formValues.address}
-        onChange={(event) => updateField("address", event.target.value)}
-        error={normalizeFieldError(fieldErrors, "address")}
-        placeholder={t("offers.address_placeholder")}
-        required
-      />
+      <div className="space-y-2">
+        <PlaceAutocomplete
+          label={renderRequiredLabel(t("offers.address"))}
+          value={formValues.address}
+          onChange={(nextValue) => updateLocation(nextValue, "")}
+          onSelect={({ placeId, description }) =>
+            updateLocation(description, placeId || "")
+          }
+          error={
+            normalizeFieldError(fieldErrors, "place_id") ||
+            normalizeFieldError(fieldErrors, "address")
+          }
+          placeholder={t("offers.location_placeholder")}
+          countryCode={countryCode}
+          required
+        />
+        {formValues.place_id ? (
+          <button
+            type="button"
+            onClick={() => updateLocation(formValues.address, "")}
+            className="text-xs text-secondary-400 underline"
+          >
+            {t("offers.location_clear")}
+          </button>
+        ) : (
+          <p className="text-xs text-secondary-400">
+            {t("offers.location_hint")}
+          </p>
+        )}
+      </div>
 
       <Input
         name="price"

@@ -431,6 +431,9 @@
   "offers": {
     "address": "Lieu de l'activité",
     "address_placeholder": "Entrez l'adresse",
+    "location_placeholder": "Rechercher un lieu ou saisir une adresse",
+    "location_hint": "Choisissez une suggestion pour enregistrer le lieu exact.",
+    "location_clear": "Saisir l'adresse manuellement",
     "city": "Ville",
     "country": "Pays",
     "country_placeholder": "Selectionnez un pays",

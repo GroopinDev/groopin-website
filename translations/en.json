@@ -431,6 +431,9 @@
   "offers": {
     "address": "Activity location",
     "address_placeholder": "Enter address",
+    "location_placeholder": "Search for a place or enter address",
+    "location_hint": "Choose a suggestion to save a precise location.",
+    "location_clear": "Use manual address",
     "city": "Activity city",
     "country": "Country",
     "country_placeholder": "Select country",
