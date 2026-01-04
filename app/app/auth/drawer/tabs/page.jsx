@@ -565,44 +565,40 @@ export default function TabsHomePage() {
           </button>
         </div>
 
-        <div className="flex flex-col gap-3">
-          <div className="hide-scrollbar flex flex-1 flex-nowrap items-center gap-2 overflow-x-auto pb-1">
-            {renderChip(
-              "feed-all",
-              t("All"),
-              feedMode === "all",
-              () => setFeedMode("all")
-            )}
-            {renderChip(
-              "feed-recommended",
-              t("recommendations.for_you"),
-              feedMode === "recommended",
-              () => setFeedMode("recommended")
-            )}
-            {renderChip(
-              "feed-trending",
-              t("recommendations.trending"),
-              feedMode === "trending",
-              () => setFeedMode("trending")
-            )}
-          </div>
-          <div className="hide-scrollbar flex flex-1 flex-nowrap items-center gap-2 overflow-x-auto pb-1">
-            {renderChip(
-              "category-all",
-              t("All"),
-              !filters.category || filters.category.length === 0,
-              () => setCategory(null)
-            )}
-            {categories.map((category, index) =>
-              renderChip(
-                `category-${category.id ?? category.name ?? index}`,
-                category.name,
-                filters.category?.includes(category.id),
-                () => setCategory(category.id),
-                category?.icon || category?.parent?.icon
-              )
-            )}
-          </div>
+        <div className="hide-scrollbar flex flex-nowrap items-center gap-2 overflow-x-auto pb-1">
+          {renderChip(
+            "feed-all",
+            t("All"),
+            feedMode === "all",
+            () => setFeedMode("all")
+          )}
+          {renderChip(
+            "feed-recommended",
+            t("recommendations.for_you"),
+            feedMode === "recommended",
+            () => setFeedMode("recommended")
+          )}
+          {renderChip(
+            "feed-trending",
+            t("recommendations.trending"),
+            feedMode === "trending",
+            () => setFeedMode("trending")
+          )}
+          {renderChip(
+            "category-all",
+            t("All"),
+            !filters.category || filters.category.length === 0,
+            () => setCategory(null)
+          )}
+          {categories.map((category, index) =>
+            renderChip(
+              `category-${category.id ?? category.name ?? index}`,
+              category.name,
+              filters.category?.includes(category.id),
+              () => setCategory(category.id),
+              category?.icon || category?.parent?.icon
+            )
+          )}
         </div>
       </div>
 
