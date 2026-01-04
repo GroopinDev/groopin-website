@@ -175,6 +175,25 @@ export default function AppShell({ children }) {
   }, [refreshGroopsCount, refreshNotificationsCount, router]);
 
   useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const email = user.email?.toLowerCase() || "";
+    if (!email || email.endsWith("@privaterelay.appleid.com")) {
+      router.replace("/app/guest/social-login-info");
+      return;
+    }
+
+    if (
+      user.is_verified === false &&
+      pathname !== "/app/auth/otp-verify-email-verification"
+    ) {
+      router.replace("/app/auth/otp-verify-email-verification");
+    }
+  }, [pathname, router, user]);
+
+  useEffect(() => {
     setDrawerOpen(false);
   }, [pathname]);
 

@@ -84,7 +84,7 @@ Use this map to find where a screen lives and which components it uses.
 
 - Route: `/app/guest/social-login-info`
   - File: `app/app/guest/social-login-info/page.jsx`
-  - Purpose: static info page after social login
+  - Purpose: collect a real email after social login (Apple relay), trigger OTP
 
 - Route: `/app/guest/terms-and-conditions`
   - File: `app/app/guest/terms-and-conditions/page.jsx`
@@ -369,6 +369,11 @@ Auth endpoints
   - Used in: `/app/auth/otp-verify-email-verification`
   - Response used: success only
 
+- `POST email/change`
+  - Used in: `/app/guest/social-login-info`
+  - Body: `{ email }`
+  - Response used: success only
+
 - `POST logout`
   - Used in: `components/app-shell.jsx`, `/app/auth/drawer/settings/account`
 
@@ -599,7 +604,7 @@ If you need to change colors or typography, start in `tailwind.config.js`.
 - `app/app/guest/reset-password/page.jsx` - new password
 - `app/app/guest/social-callback/page.jsx` - social auth callback (wrapper)
 - `app/app/guest/social-callback/social-callback-client.jsx` - social auth logic
-- `app/app/guest/social-login-info/page.jsx` - static info
+- `app/app/guest/social-login-info/page.jsx` - social login email capture + OTP trigger
 - `app/app/guest/terms-and-conditions/page.jsx` - terms page
 
 ### Auth routes
@@ -694,5 +699,3 @@ If you need to change colors or typography, start in `tailwind.config.js`.
 - Change input style everywhere: `components/ui/input.jsx`
 - Change colors or fonts: `tailwind.config.js`
 - Change any user-facing text: `translations/*.json`
-
-

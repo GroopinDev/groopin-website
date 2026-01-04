@@ -27,7 +27,19 @@ export default function SocialCallbackClient() {
       try {
         setSession(token);
         const userResponse = await apiRequest("user", { method: "GET" });
-        setSession(token, userResponse?.data);
+        const user = userResponse?.data;
+        setSession(token, user);
+
+        const email = user?.email?.toLowerCase() || "";
+        if (!email || email.endsWith("@privaterelay.appleid.com")) {
+          router.replace("/app/guest/social-login-info");
+          return;
+        }
+        if (user?.is_verified === false) {
+          router.replace("/app/auth/otp-verify-email-verification");
+          return;
+        }
+
         router.replace("/app/auth/drawer/tabs");
       } catch (err) {
         setError(err?.data?.message || t("general.error_has_occurred"));
