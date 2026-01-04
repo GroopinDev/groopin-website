@@ -506,6 +506,8 @@
     "edit_profile_information": "Modifier les informations du profil",
     "extra_information": "Informations complémentaires",
     "hide_email": "Masquer l'e-mail",
+      "search_interests": "Rechercher des int?r?ts",
+      "interests_no_results": "Aucun int?r?t trouv?.",
     "load_error": "Impossible de charger le profil. Réessayez.",
     "member_since": "Membre depuis",
     "offers_created": "Offres créées",

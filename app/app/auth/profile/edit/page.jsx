@@ -33,6 +33,52 @@ const normalizeFieldError = (errors, field) => {
 const normalizeQuestionType = (type) =>
   String(type || "").replace("-", "_");
 
+const resolveCategoryLabel = (category, locale) => {
+  if (!category) return "";
+  const name = category.name;
+  if (typeof name === "string") return name;
+  if (name && typeof name === "object") {
+    return (
+      name?.[locale] ||
+      name?.en ||
+      Object.values(name)[0] ||
+      ""
+    );
+  }
+  return "";
+};
+
+const buildInterestOptionsFromCategories = (categories, locale) => {
+  if (!Array.isArray(categories)) return [];
+  const options = [];
+  categories.forEach((category) => {
+    const label = resolveCategoryLabel(category, locale);
+    if (label) {
+      options.push({
+        id: String(category.id),
+        label
+      });
+    }
+    const children = Array.isArray(category.children) ? category.children : [];
+    children.forEach((child) => {
+      const childLabel = resolveCategoryLabel(child, locale);
+      if (!childLabel) return;
+      options.push({
+        id: String(child.id),
+        label: childLabel,
+        parentLabel: label
+      });
+    });
+  });
+  return options;
+};
+
+const buildInterestOptionsFromSettings = (options = []) =>
+  options.map((option) => ({
+    id: String(option.value),
+    label: option.label
+  }));
+
 const parseMultiValue = (value) => {
   if (Array.isArray(value)) {
     return value.map((item) => String(item));
@@ -92,6 +138,8 @@ export default function ProfileEditPage() {
   const fileInputRef = useRef(null);
   const [user, setUser] = useState(() => getUser());
   const [dynamicQuestions, setDynamicQuestions] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [interestQuery, setInterestQuery] = useState("");
   const [formValues, setFormValues] = useState({
     first_name: "",
     last_name: "",
@@ -226,6 +274,11 @@ export default function ProfileEditPage() {
         setDynamicQuestions(
           dynamicGroups.user || dynamicGroups["App\\\\Models\\\\User"] || []
         );
+        setCategories(
+          Array.isArray(paramsPayload?.categories)
+            ? paramsPayload.categories
+            : []
+        );
         setStatus("ready");
       } catch (error) {
         if (!isMounted) return;
@@ -280,6 +333,7 @@ export default function ProfileEditPage() {
       : 1;
   const cropScale = baseScale * cropZoom;
   const isCropReady = cropAreaSize > 0 && imageSize.width > 0;
+  const locale = getLanguageHeader();
 
   const clampCropOffset = (nextOffset) => {
     if (!isCropReady) {
@@ -766,16 +820,130 @@ export default function ProfileEditPage() {
                 );
               }
 
-              if (questionType === "multi_select") {
-                const options = question.formatted_settings?.options || [];
-                const optionLabelByValue = new Map(
-                  options.map((option) => [String(option.value), option.label])
-                );
-                const selectedValues = Array.isArray(questionValue)
-                  ? questionValue
-                  : parseMultiValue(questionValue);
-                return (
-                  <div key={question.id} className="space-y-1">
+          if (questionType === "multi_select") {
+            const options = question.formatted_settings?.options || [];
+            const optionLabelByValue = new Map(
+              options.map((option) => [String(option.value), option.label])
+            );
+            const selectedValues = Array.isArray(questionValue)
+              ? questionValue
+              : parseMultiValue(questionValue);
+
+            if (question.name === "interests") {
+              const interestsFromCategories =
+                buildInterestOptionsFromCategories(categories, locale);
+              const interestsFromSettings =
+                buildInterestOptionsFromSettings(options);
+              const interestOptions = interestsFromCategories.length
+                ? interestsFromCategories
+                : interestsFromSettings;
+              const interestLabelById = new Map(
+                interestOptions.map((option) => [
+                  option.id,
+                  option.parentLabel
+                    ? `${option.parentLabel} / ${option.label}`
+                    : option.label
+                ])
+              );
+              const normalizedQuery = interestQuery.trim().toLowerCase();
+              const filteredOptions = normalizedQuery
+                ? interestOptions.filter((option) => {
+                    const haystack = `${option.label} ${option.parentLabel || ""}`
+                      .toLowerCase()
+                      .trim();
+                    return haystack.includes(normalizedQuery);
+                  })
+                : interestOptions;
+              const selectedSet = new Set(selectedValues);
+
+              return (
+                <div key={question.id} className="space-y-3">
+                  <label className="mb-1 block text-lg text-primary-500">
+                    {question.label || t("Interests")}
+                  </label>
+                  <Input
+                    label={t("profile.search_interests")}
+                    value={interestQuery}
+                    onChange={(event) => setInterestQuery(event.target.value)}
+                    placeholder={t("Search")}
+                  />
+                  <div
+                    className={`max-h-64 space-y-2 overflow-y-auto rounded-2xl border-2 px-4 py-3 ${
+                      error ? "border-danger-600" : "border-[#EADAF1]"
+                    }`}
+                  >
+                    {filteredOptions.length ? (
+                      filteredOptions.map((option) => {
+                        const id = option.id;
+                        const checked = selectedSet.has(id);
+                        const label =
+                          option.parentLabel
+                            ? `${option.parentLabel} / ${option.label}`
+                            : option.label;
+                        return (
+                          <label
+                            key={`${question.id}-${id}`}
+                            className="flex items-center gap-3 text-sm text-secondary-400"
+                          >
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 accent-primary-500"
+                              checked={checked}
+                              onChange={() => {
+                                if (checked) {
+                                  updateDynamicQuestion(
+                                    question.name,
+                                    selectedValues.filter(
+                                      (value) => value !== id
+                                    )
+                                  );
+                                  return;
+                                }
+                                updateDynamicQuestion(question.name, [
+                                  ...selectedValues,
+                                  id
+                                ]);
+                              }}
+                            />
+                            <span>{label}</span>
+                          </label>
+                        );
+                      })
+                    ) : (
+                      <p className="text-sm text-secondary-400">
+                        {t("profile.interests_no_results")}
+                      </p>
+                    )}
+                  </div>
+                  {selectedValues.length ? (
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {selectedValues.map((value) => (
+                        <button
+                          key={`selected-${question.id}-${value}`}
+                          type="button"
+                          onClick={() =>
+                            updateDynamicQuestion(
+                              question.name,
+                              selectedValues.filter((item) => item !== value)
+                            )
+                          }
+                          className="flex min-h-[34px] items-center gap-2 rounded-full border border-secondary-500 bg-secondary-500 px-3 py-1.5 text-sm font-semibold text-white"
+                        >
+                          <span>{interestLabelById.get(value) || value}</span>
+                          <span className="text-xs">x</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                  {error ? (
+                    <p className="mt-2 text-sm text-danger-600">{error}</p>
+                  ) : null}
+                </div>
+              );
+            }
+
+            return (
+              <div key={question.id} className="space-y-1">
                     <label className="mb-1 block text-lg text-primary-500">
                       {question.label}
                     </label>

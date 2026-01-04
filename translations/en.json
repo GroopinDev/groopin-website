@@ -506,6 +506,8 @@
     "edit_profile_information": "Edit profile information",
     "extra_information": "Extra information",
     "hide_email": "Hide email",
+    "search_interests": "Search interests",
+    "interests_no_results": "No interests found.",
     "load_error": "Unable to load profile data. Try again.",
     "member_since": "Member since",
     "offers_created": "Offers created",
