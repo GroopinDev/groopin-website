@@ -49,7 +49,11 @@ function OtpVerifyEmailVerificationContent() {
         auth: true
       });
 
-      const userResponse = await apiRequest("user", { method: "GET" });
+      const userResponse = await apiRequest("user", {
+        method: "GET",
+        cache: false,
+        dedupe: false
+      });
       const token = getToken();
       if (token) {
         setSession(token, userResponse?.data);
