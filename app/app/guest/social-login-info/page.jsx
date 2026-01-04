@@ -12,9 +12,33 @@ import { getToken, getUser, setSession } from "../../../lib/session";
 export default function SocialLoginInfoPage() {
   const router = useRouter();
   const { t } = useI18n();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const normalizeNameValue = (value) => {
+    const trimmed = value?.trim() || "";
+    if (!trimmed) return "";
+    return trimmed.toLowerCase() === "user" ? "" : trimmed;
+  };
+
+  const hasCompleteName = (user) => {
+    const normalizedFirstName = normalizeNameValue(user?.first_name);
+    const normalizedLastName = normalizeNameValue(user?.last_name);
+    return Boolean(normalizedFirstName && normalizedLastName);
+  };
+
+  const hydrateFields = (user) => {
+    if (!user) return;
+    const cachedEmail = user.email || "";
+    if (cachedEmail) {
+      setEmail(cachedEmail);
+    }
+    setFirstName(normalizeNameValue(user.first_name));
+    setLastName(normalizeNameValue(user.last_name));
+  };
 
   useEffect(() => {
     const token = getToken();
@@ -24,6 +48,11 @@ export default function SocialLoginInfoPage() {
     }
 
     const redirectIfComplete = (user) => {
+      hydrateFields(user);
+      if (!hasCompleteName(user)) {
+        return;
+      }
+
       const cachedEmail = user?.email?.toLowerCase() || "";
       if (cachedEmail && !cachedEmail.endsWith("@privaterelay.appleid.com")) {
         if (user?.is_verified === false) {
@@ -53,7 +82,13 @@ export default function SocialLoginInfoPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const normalizedFirstName = firstName.trim();
+    const normalizedLastName = lastName.trim();
     const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedFirstName || !normalizedLastName) {
+      setStatus(t("auth.social_name_error"));
+      return;
+    }
     if (!normalizedEmail || !normalizedEmail.includes("@")) {
       setStatus(t("validation.email"));
       return;
@@ -68,18 +103,26 @@ export default function SocialLoginInfoPage() {
       setStatus("");
       const response = await apiRequest("email/change", {
         method: "POST",
-        body: { email: normalizedEmail },
+        body: {
+          email: normalizedEmail,
+          first_name: normalizedFirstName,
+          last_name: normalizedLastName
+        },
         auth: true
       });
-      if (response?.status === "already-verified") {
-        router.replace("/app/auth/drawer/tabs");
-        return;
-      }
-
-      const userResponse = await apiRequest("user", { method: "GET" });
+      const userResponse = await apiRequest("user", {
+        method: "GET",
+        cache: false,
+        dedupe: false
+      });
       const token = getToken();
       if (token) {
         setSession(token, userResponse?.data);
+      }
+
+      if (response?.status === "already-verified") {
+        router.replace("/app/auth/drawer/tabs");
+        return;
       }
 
       router.push("/app/auth/otp-verify-email-verification?isSent=true");
@@ -100,6 +143,28 @@ export default function SocialLoginInfoPage() {
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-5">
+        <Input
+          name="first_name"
+          label={t("First Name")}
+          type="text"
+          value={firstName}
+          onChange={(event) => setFirstName(event.target.value)}
+          autoComplete="given-name"
+          autoCapitalize="words"
+          disabled={submitting}
+          required
+        />
+        <Input
+          name="last_name"
+          label={t("Last Name")}
+          type="text"
+          value={lastName}
+          onChange={(event) => setLastName(event.target.value)}
+          autoComplete="family-name"
+          autoCapitalize="words"
+          disabled={submitting}
+          required
+        />
         <Input
           name="email"
           label={t("Email")}

@@ -84,7 +84,7 @@ Use this map to find where a screen lives and which components it uses.
 
 - Route: `/app/guest/social-login-info`
   - File: `app/app/guest/social-login-info/page.jsx`
-  - Purpose: collect a real email after social login (Apple relay), trigger OTP
+  - Purpose: collect name + real email after social login (Apple relay), trigger OTP
 
 - Route: `/app/guest/terms-and-conditions`
   - File: `app/app/guest/terms-and-conditions/page.jsx`
