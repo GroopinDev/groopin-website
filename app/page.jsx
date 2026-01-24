@@ -23,7 +23,6 @@ const translations = {
     },
     buttons: {
       openApp: "Open the app",
-      startGroop: "Start a Groop",
       openWebApp: "Open the web app",
       seeHow: "See how it works"
     },
@@ -148,7 +147,6 @@ const translations = {
     },
     buttons: {
       openApp: "Ouvrir l'app",
-      startGroop: "Créer un Groop",
       openWebApp: "Ouvrir l'app web",
       seeHow: "Voir comment ça marche"
     },
@@ -326,11 +324,11 @@ export default function Home({ searchParams }) {
         </div>
 
         <div className="relative z-10">
-          <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 pb-6 pt-8 lg:px-10">
+          <header className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-6 pb-6 pt-6 sm:flex-row sm:items-center sm:justify-between lg:px-10 lg:pt-8">
             <Link href={basePath} className="flex items-center">
               <div className="leading-none">
                 <AnimatedLogo width={132} height={34} />
-                <p className="text-[11px] uppercase tracking-[0.28em] text-charcoal-500">
+                <p className="text-[10px] uppercase tracking-[0.24em] text-charcoal-500 sm:text-[11px] sm:tracking-[0.28em]">
                   {content.tagline}
                 </p>
               </div>
@@ -349,7 +347,7 @@ export default function Home({ searchParams }) {
                 {content.nav.stories}
               </Link>
             </nav>
-            <div className="flex items-center gap-3">
+            <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto sm:flex-nowrap">
               <div
                 aria-label={content.languageLabel}
                 className="inline-flex items-center rounded-full border border-charcoal-900/15 bg-white/70 p-1 text-[11px] font-semibold text-charcoal-700"
@@ -375,13 +373,33 @@ export default function Home({ searchParams }) {
               >
                 {content.buttons.openApp}
               </Link>
-              <Link
-                href="/app/guest/login"
-                className="rounded-full bg-charcoal-900 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-charcoal-900/20 transition hover:-translate-y-0.5"
-              >
-                {content.buttons.startGroop}
-              </Link>
             </div>
+            <nav className="flex flex-wrap items-center gap-2 text-xs font-semibold text-charcoal-700 md:hidden">
+              <Link
+                href={anchorHref("#discover")}
+                className="rounded-full border border-charcoal-900/10 bg-white/70 px-3 py-1.5 transition hover:text-charcoal-900"
+              >
+                {content.nav.discover}
+              </Link>
+              <Link
+                href={anchorHref("#groops")}
+                className="rounded-full border border-charcoal-900/10 bg-white/70 px-3 py-1.5 transition hover:text-charcoal-900"
+              >
+                {content.nav.groops}
+              </Link>
+              <Link
+                href={anchorHref("#signals")}
+                className="rounded-full border border-charcoal-900/10 bg-white/70 px-3 py-1.5 transition hover:text-charcoal-900"
+              >
+                {content.nav.trust}
+              </Link>
+              <Link
+                href={anchorHref("#stories")}
+                className="rounded-full border border-charcoal-900/10 bg-white/70 px-3 py-1.5 transition hover:text-charcoal-900"
+              >
+                {content.nav.stories}
+              </Link>
+            </nav>
           </header>
 
           <main className="mx-auto w-full max-w-6xl px-6 pb-20 lg:px-10">
